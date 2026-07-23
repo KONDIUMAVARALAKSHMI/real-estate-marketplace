@@ -159,34 +159,37 @@ function UpdateListing() {
 
   if (fetching) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="text-lg font-semibold text-slate-600">Loading property details...</div>
+      <div className="flex min-h-screen items-center justify-center bg-[#EBFADC] dark:bg-[#102F15]">
+        <div className="text-lg font-semibold text-[#728C5A] animate-pulse">Loading property details...</div>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-3xl font-extrabold text-slate-900 text-center mb-8">Update your Listing</h1>
+    <main className="min-h-screen px-4 py-24 sm:px-6 lg:px-8 bg-[#EBFADC] dark:bg-[#102F15] transition-colors duration-500 pt-16">
+      <div className="mx-auto max-w-5xl rounded-3xl border p-8 sm:p-12 shadow-xl bg-white dark:bg-[#102F15] border-[#728C5A]/20 dark:border-white/10 transition-colors">
+        <h1 className="text-4xl text-center mb-10 text-[#102F15] dark:text-white" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>
+          Update Listing
+        </h1>
 
         {error && (!formData.userRef || (user && formData.userRef !== user._id)) ? (
           <div className="text-center py-8">
-            <p className="text-red-600 font-semibold mb-4">{error}</p>
+            <p className="font-semibold mb-6 p-4 rounded-xl inline-block bg-red-100 text-red-700">{error}</p>
+            <br />
             <button
               onClick={() => navigate('/profile')}
-              className="rounded-xl bg-slate-900 px-6 py-2.5 text-white font-medium hover:bg-slate-800 transition"
+              className="rounded-full px-8 py-3.5 text-white font-bold transition bg-[#728C5A] hover:bg-[#61784c] shadow-md"
             >
               Back to Profile
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="grid gap-8 md:grid-cols-2">
+          <form onSubmit={handleSubmit} className="grid gap-12 md:grid-cols-2">
             {/* Left Column - Core Info */}
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700" htmlFor="title">
-                  Title
+                <label className="mb-2 block text-sm font-semibold text-[#102F15] dark:text-white" htmlFor="title">
+                  Property Title
                 </label>
                 <input
                   id="title"
@@ -194,13 +197,13 @@ function UpdateListing() {
                   value={formData.title}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none transition focus:border-slate-500"
-                  placeholder="Modern Apartment"
+                  className="w-full rounded-xl px-4 py-3 outline-none transition text-sm bg-gray-50 dark:bg-black/20 text-[#102F15] dark:text-white border border-[#728C5A]/20 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
+                  placeholder="Luxury Penthouse in Downtown"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700" htmlFor="description">
+                <label className="mb-2 block text-sm font-semibold text-[#102F15] dark:text-white" htmlFor="description">
                   Description
                 </label>
                 <textarea
@@ -208,15 +211,14 @@ function UpdateListing() {
                   value={formData.description}
                   onChange={handleChange}
                   required
-                  rows="4"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none transition focus:border-slate-500"
-                  placeholder="Describe your property..."
+                  rows="5"
+                  className="w-full rounded-xl px-4 py-3 outline-none transition text-sm bg-gray-50 dark:bg-black/20 text-[#102F15] dark:text-white border border-[#728C5A]/20 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700" htmlFor="address">
-                  Address
+                <label className="mb-2 block text-sm font-semibold text-[#102F15] dark:text-white" htmlFor="address">
+                  Full Address
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -225,33 +227,35 @@ function UpdateListing() {
                     value={formData.address}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none transition focus:border-slate-500"
-                    placeholder="123 Main St, New York, NY"
+                    className="flex-1 rounded-xl px-4 py-3 outline-none transition text-sm bg-gray-50 dark:bg-black/20 text-[#102F15] dark:text-white border border-[#728C5A]/20 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
+                    placeholder="123 Luxury Ave, Beverly Hills, CA"
                   />
                   <button
                     type="button"
                     onClick={handleLocateAddress}
                     disabled={locating || !formData.address.trim()}
-                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex shrink-0 items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition bg-[#728C5A] hover:bg-[#61784c] disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <FaMapMarkerAlt />
                     {locating ? 'Locating...' : 'Re-locate'}
                   </button>
                 </div>
-                {locateError && <p className="mt-1.5 text-xs font-medium text-red-600">{locateError}</p>}
+                {locateError && <p className="mt-2 text-xs font-semibold text-red-500">{locateError}</p>}
 
                 {formData.latitude != null && formData.longitude != null && (
-                  <div className="mt-3 space-y-2">
-                    <p className="text-xs font-medium text-slate-500">
+                  <div className="mt-4 space-y-3">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
                       Drag the pin to fine-tune the exact location.
                     </p>
-                    <Map
-                      latitude={formData.latitude}
-                      longitude={formData.longitude}
-                      title={formData.title || 'Property location'}
-                      onMarkerDragEnd={handleMarkerDragEnd}
-                    />
-                    <p className="text-xs text-slate-500">
+                    <div className="rounded-xl overflow-hidden border border-[#728C5A]/20 dark:border-white/10">
+                      <Map
+                        latitude={formData.latitude}
+                        longitude={formData.longitude}
+                        title={formData.title || 'Property location'}
+                        onMarkerDragEnd={handleMarkerDragEnd}
+                      />
+                    </div>
+                    <p className="text-xs font-semibold text-[#728C5A] dark:text-gray-300">
                       {formData.city && `${formData.city}, `}
                       {formData.state && `${formData.state}, `}
                       {formData.country} &middot; {Number(formData.latitude).toFixed(4)}, {Number(formData.longitude).toFixed(4)}
@@ -262,7 +266,7 @@ function UpdateListing() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700" htmlFor="bedrooms">
+                  <label className="mb-2 block text-sm font-semibold text-[#102F15] dark:text-white" htmlFor="bedrooms">
                     Bedrooms
                   </label>
                   <input
@@ -272,11 +276,11 @@ function UpdateListing() {
                     value={formData.bedrooms}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none transition focus:border-slate-500"
+                    className="w-full rounded-xl px-4 py-3 outline-none transition text-sm bg-gray-50 dark:bg-black/20 text-[#102F15] dark:text-white border border-[#728C5A]/20 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700" htmlFor="bathrooms">
+                  <label className="mb-2 block text-sm font-semibold text-[#102F15] dark:text-white" htmlFor="bathrooms">
                     Bathrooms
                   </label>
                   <input
@@ -286,15 +290,15 @@ function UpdateListing() {
                     value={formData.bathrooms}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none transition focus:border-slate-500"
+                    className="w-full rounded-xl px-4 py-3 outline-none transition text-sm bg-gray-50 dark:bg-black/20 text-[#102F15] dark:text-white border border-[#728C5A]/20 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700" htmlFor="price">
-                    Regular Price ($)
+                  <label className="mb-2 block text-sm font-semibold text-[#102F15] dark:text-white" htmlFor="price">
+                    Regular Price
                   </label>
                   <input
                     id="price"
@@ -303,13 +307,13 @@ function UpdateListing() {
                     value={formData.price}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none transition focus:border-slate-500"
+                    className="w-full rounded-xl px-4 py-3 outline-none transition text-sm bg-gray-50 dark:bg-black/20 text-[#102F15] dark:text-white border border-[#728C5A]/20 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
                   />
                 </div>
                 {formData.offer && (
                   <div>
-                    <label className="mb-1 block text-sm font-semibold text-slate-700" htmlFor="discountPrice">
-                      Discount Price ($)
+                    <label className="mb-2 block text-sm font-semibold text-[#102F15] dark:text-white" htmlFor="discountPrice">
+                      Discount Price
                     </label>
                     <input
                       id="discountPrice"
@@ -318,7 +322,7 @@ function UpdateListing() {
                       value={formData.discountPrice}
                       onChange={handleChange}
                       required={formData.offer}
-                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none transition focus:border-slate-500"
+                      className="w-full rounded-xl px-4 py-3 outline-none transition text-sm bg-gray-50 dark:bg-black/20 text-[#102F15] dark:text-white border border-[#728C5A]/20 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
                     />
                   </div>
                 )}
@@ -326,12 +330,12 @@ function UpdateListing() {
             </div>
 
             {/* Right Column - Status & Media */}
-            <div className="space-y-6">
-              <div className="space-y-3 rounded-2xl border border-slate-200 p-5 bg-slate-50">
-                <span className="text-sm font-semibold text-slate-700 block">Property Options</span>
+            <div className="space-y-8">
+              <div className="space-y-4 rounded-2xl border p-6 bg-[#EBFADC]/20 dark:bg-black/20 border-[#728C5A]/10 dark:border-white/10 transition-colors">
+                <span className="text-sm font-semibold block uppercase tracking-widest text-[#728C5A] dark:text-gray-400">Property Options</span>
                 
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 font-medium text-slate-700">
+                <div className="flex gap-6 pb-2">
+                  <label className="flex items-center gap-2 font-bold cursor-pointer text-[#102F15] dark:text-white">
                     <input
                       type="radio"
                       name="type"
@@ -339,11 +343,11 @@ function UpdateListing() {
                       value="rent"
                       checked={formData.type === 'rent'}
                       onChange={handleChange}
-                      className="h-4 w-4 accent-slate-800"
+                      className="h-4 w-4 accent-[#728C5A]"
                     />
-                    Rent
+                    For Rent
                   </label>
-                  <label className="flex items-center gap-2 font-medium text-slate-700">
+                  <label className="flex items-center gap-2 font-bold cursor-pointer text-[#102F15] dark:text-white">
                     <input
                       type="radio"
                       name="type"
@@ -351,76 +355,76 @@ function UpdateListing() {
                       value="sale"
                       checked={formData.type === 'sale'}
                       onChange={handleChange}
-                      className="h-4 w-4 accent-slate-800"
+                      className="h-4 w-4 accent-[#728C5A]"
                     />
-                    Sale
+                    For Sale
                   </label>
                 </div>
 
-                <div className="flex flex-col gap-2 pt-2 border-t border-slate-200">
-                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <div className="flex flex-col gap-3 pt-4 border-t border-[#728C5A]/20 dark:border-white/10">
+                  <label className="flex items-center gap-3 text-sm font-bold cursor-pointer text-[#102F15] dark:text-white">
                     <input
                       id="parking"
                       type="checkbox"
                       checked={formData.parking}
                       onChange={handleChange}
-                      className="h-4 w-4 rounded border-slate-300 text-slate-800 accent-slate-800"
+                      className="h-4 w-4 rounded accent-[#728C5A]"
                     />
-                    Parking Spot
+                    Includes Parking
                   </label>
-                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <label className="flex items-center gap-3 text-sm font-bold cursor-pointer text-[#102F15] dark:text-white">
                     <input
                       id="furnished"
                       type="checkbox"
                       checked={formData.furnished}
                       onChange={handleChange}
-                      className="h-4 w-4 rounded border-slate-300 text-slate-800 accent-slate-800"
+                      className="h-4 w-4 rounded accent-[#728C5A]"
                     />
-                    Furnished
+                    Fully Furnished
                   </label>
-                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <label className="flex items-center gap-3 text-sm font-bold cursor-pointer text-[#102F15] dark:text-white">
                     <input
                       id="offer"
                       type="checkbox"
                       checked={formData.offer}
                       onChange={handleChange}
-                      className="h-4 w-4 rounded border-slate-300 text-slate-800 accent-slate-800"
+                      className="h-4 w-4 rounded accent-[#728C5A]"
                     />
-                    Special Offer (Discount)
+                    Special Offer Pricing
                   </label>
                 </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">
-                  Image URLs
+                <label className="mb-2 block text-sm font-semibold text-[#102F15] dark:text-white">
+                  Gallery Image URLs (At least 1 required)
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={imageUrlInput}
                     onChange={(e) => setImageUrlInput(e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                    className="flex-1 rounded-xl border border-slate-300 px-4 py-2.5 outline-none transition focus:border-slate-500"
+                    placeholder="https://example.com/luxury-pool.jpg"
+                    className="flex-1 rounded-xl px-4 py-3 outline-none transition text-sm bg-gray-50 dark:bg-black/20 text-[#102F15] dark:text-white border border-[#728C5A]/20 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
                   />
                   <button
                     type="button"
                     onClick={handleAddImageUrl}
-                    className="rounded-xl bg-slate-800 px-4 py-2 text-white font-medium hover:bg-slate-700 transition"
+                    className="rounded-xl px-6 py-3 font-bold transition border border-[#728C5A]/30 text-[#728C5A] hover:bg-[#728C5A] hover:text-white bg-white dark:bg-[#102F15]"
                   >
                     Add
                   </button>
                 </div>
 
                 {formData.imageUrls.length > 0 && (
-                  <div className="mt-4 space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-3 bg-slate-50">
+                  <div className="mt-4 space-y-2 max-h-56 overflow-y-auto rounded-xl p-3 border bg-gray-50 dark:bg-black/20 border-[#728C5A]/20 dark:border-white/10">
                     {formData.imageUrls.map((url, index) => (
-                      <div key={index} className="flex items-center justify-between gap-2 bg-white border border-slate-200 rounded-lg p-2 text-xs">
-                        <span className="truncate flex-1 text-slate-600">{url}</span>
+                      <div key={index} className="flex items-center justify-between gap-3 rounded-lg p-3 text-sm border bg-white dark:bg-[#102F15] border-[#728C5A]/10 dark:border-white/10 shadow-sm">
+                        <span className="truncate flex-1 font-medium text-gray-500 dark:text-gray-400">{url}</span>
                         <button
                           type="button"
                           onClick={() => handleRemoveImageUrl(index)}
-                          className="text-red-600 hover:text-red-800 font-semibold"
+                          className="font-bold transition text-red-600 hover:text-red-800"
                         >
                           Remove
                         </button>
@@ -430,14 +434,14 @@ function UpdateListing() {
                 )}
               </div>
 
-              {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+              {error && <p className="text-sm font-semibold p-3 rounded-lg bg-red-100 text-red-700">{error}</p>}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-xl bg-slate-900 py-3 text-white font-semibold hover:bg-slate-800 transition disabled:opacity-75"
+                className="w-full rounded-xl py-4 text-lg font-bold text-white shadow-xl transition bg-[#728C5A] hover:bg-[#61784c] disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {loading ? 'Updating listing...' : 'Update Listing'}
+                {loading ? 'Saving Changes...' : 'Save Updates'}
               </button>
             </div>
           </form>

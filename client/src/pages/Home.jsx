@@ -1,655 +1,529 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
-  FaMapMarkerAlt, FaBed, FaBath, FaShieldAlt, FaUserCheck, FaGlobeAmericas,
-  FaRobot, FaLock, FaHeadset, FaAward, FaStar,
+  FaArrowRight,
+  FaShieldAlt,
+  FaHandshake,
+  FaGlobe,
+  FaSearch,
+  FaHeadset,
 } from 'react-icons/fa';
 import api from '../services/api.js';
 import ListingCard from '../components/ListingCard.jsx';
-import { formatPrice } from '../utils/currency.js';
+import { getPropertyStats } from '../utils/stats.js';
 
-// ---------------------------------------------------------------------------
-// Small presentational helpers
-// ---------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-components
+// ─────────────────────────────────────────────────────────────────────────────
 
-function SectionHeader({ eyebrow, eyebrowClass, title, ctaTo, ctaLabel }) {
+function SectionHeader({ title, viewAllLink }) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-slate-100 pb-4">
-      <div>
-        <p className={`text-sm font-semibold uppercase tracking-[0.3em] ${eyebrowClass}`}>{eyebrow}</p>
-        <h2 className="mt-2 text-3xl font-extrabold text-slate-900">{title}</h2>
-      </div>
-      {ctaTo && (
+    <div className="mb-7 flex items-center justify-between">
+      <h2
+        className="text-2xl font-bold text-[#102F15] dark:text-white"
+        style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+      >
+        {title}
+      </h2>
+      {viewAllLink && (
         <Link
-          to={ctaTo}
-          className="rounded-full border border-slate-300 px-5 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
+          to={viewAllLink}
+          className="flex items-center gap-1.5 text-sm font-semibold text-[#728C5A] hover:text-[#61784c] transition-colors"
         >
-          {ctaLabel}
+          View all <FaArrowRight className="text-xs" />
         </Link>
       )}
     </div>
   );
 }
 
-function CardSkeletonGrid({ count = 4 }) {
+function SkeletonCard() {
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: count }).map((_, idx) => (
-        <div key={idx} className="animate-pulse overflow-hidden rounded-3xl border border-slate-100 bg-slate-50">
-          <div className="h-56 w-full bg-slate-200" />
-          <div className="space-y-3 p-6">
-            <div className="h-4 w-3/4 rounded bg-slate-200" />
-            <div className="h-3 w-1/2 rounded bg-slate-200" />
-            <div className="h-3 w-full rounded bg-slate-200" />
-          </div>
-        </div>
-      ))}
+    <div className="overflow-hidden rounded-2xl border p-4 bg-white dark:bg-[#102F15]/60 border-[#728C5A]/10 dark:border-white/5">
+      <div className="h-48 w-full animate-pulse rounded-xl bg-gray-200 dark:bg-white/10" />
+      <div className="mt-4 h-5 w-3/4 animate-pulse rounded-md bg-gray-200 dark:bg-white/10" />
+      <div className="mt-2 h-4 w-1/2 animate-pulse rounded-md bg-gray-200 dark:bg-white/10" />
+      <div className="mt-5 flex gap-3">
+        <div className="h-4 w-1/4 animate-pulse rounded-md bg-gray-200 dark:bg-white/10" />
+        <div className="h-4 w-1/4 animate-pulse rounded-md bg-gray-200 dark:bg-white/10" />
+      </div>
     </div>
   );
 }
 
-// Animated counter — counts up from 0 to `value` once it mounts.
-function AnimatedCounter({ value, suffix = '' }) {
-  const [display, setDisplay] = useState(0);
-  const ref = useRef(null);
-  const started = useRef(false);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return undefined;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !started.current) {
-          started.current = true;
-          const duration = 1200;
-          const startTime = performance.now();
-
-          const step = (now) => {
-            const progress = Math.min((now - startTime) / duration, 1);
-            setDisplay(Math.round(progress * value));
-            if (progress < 1) requestAnimationFrame(step);
-          };
-          requestAnimationFrame(step);
-        }
-      },
-      { threshold: 0.3 }
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [value]);
-
-  return (
-    <span ref={ref} className="text-4xl font-extrabold text-slate-900">
-      {display.toLocaleString()}{suffix}
-    </span>
-  );
-}
-
-const TESTIMONIALS = [
-  { name: 'Amelia Carter', country: 'United States', rating: 5, review: 'The country switcher made comparing listings across markets effortless. We found our New York apartment within a week.', initials: 'AC', color: 'bg-rose-500' },
-  { name: 'Rohan Mehta', country: 'India', rating: 5, review: 'Transparent pricing and instant currency conversion took all the guesswork out of budgeting for our Hyderabad villa.', initials: 'RM', color: 'bg-amber-500' },
-  { name: 'Yuki Tanaka', country: 'Japan', rating: 4, review: 'Clean interface, accurate maps, and a great selection of Tokyo apartments. Exactly what a busy professional needs.', initials: 'YT', color: 'bg-sky-500' },
-  { name: 'Sophie Laurent', country: 'France', rating: 5, review: 'We compared Paris and Lyon side by side in minutes. The featured listings are genuinely useful, not just filler.', initials: 'SL', color: 'bg-emerald-500' },
-  { name: 'Liam O\'Connor', country: 'United Kingdom', rating: 5, review: 'Searching by city and price range was seamless, and the mortgage estimate on the listing page helped us plan ahead.', initials: 'LO', color: 'bg-indigo-500' },
-  { name: 'Fatima Al Suwaidi', country: 'United Arab Emirates', rating: 4, review: 'A polished, professional platform. The luxury collection badges made it easy to spot premium Dubai properties fast.', initials: 'FA', color: 'bg-fuchsia-500' },
+const POPULAR_CITIES = [
+  { name: 'New York', country: 'United States', image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=800&q=80', properties: 1250 },
+  { name: 'London', country: 'United Kingdom', image: 'https://images.unsplash.com/photo-1513635269975-5969336cd182?auto=format&fit=crop&w=800&q=80', properties: 980 },
+  { name: 'Dubai', country: 'United Arab Emirates', image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80', properties: 1540 },
+  { name: 'Tokyo', country: 'Japan', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=800&q=80', properties: 860 },
+  { name: 'Paris', country: 'France', image: 'https://images.unsplash.com/photo-1502602898657-3e90760b3838?auto=format&fit=crop&w=800&q=80', properties: 720 },
+  { name: 'Sydney', country: 'Australia', image: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=800&q=80', properties: 650 },
 ];
 
-const WHY_CHOOSE_ITEMS = [
-  { icon: FaShieldAlt, title: 'Verified Listings', desc: 'Every property is reviewed for accurate details before it goes live.' },
-  { icon: FaUserCheck, title: 'Verified Owners', desc: 'Listings are tied to authenticated accounts, reducing fraudulent posts.' },
-  { icon: FaGlobeAmericas, title: 'Global Marketplace', desc: 'Browse properties across 10 countries from a single dashboard.' },
-  { icon: FaRobot, title: 'AI Recommendations', desc: 'Featured picks adapt automatically to the country you\'re browsing.' },
-  { icon: FaLock, title: 'Secure Transactions', desc: 'JWT-protected accounts keep your listings and profile data safe.' },
-  { icon: FaHeadset, title: '24x7 Support', desc: 'Our team is on hand around the clock to help buyers and sellers.' },
-  { icon: FaAward, title: 'Trusted Platform', desc: 'Thousands of properties and a growing community of happy users.' },
+const TRUST_ITEMS = [
+  {
+    icon: FaShieldAlt,
+    title: 'Trusted Listings',
+    desc: 'Verified properties from trusted sellers.',
+  },
+  {
+    icon: FaGlobe,
+    title: 'Worldwide',
+    desc: 'Find properties in top locations worldwide.',
+  },
+  {
+    icon: FaHeadset,
+    title: '24/7 Support',
+    desc: "We're here to help you anytime, anywhere.",
+  },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────────────────────────────────────
 
 function Home() {
-  const { selectedCountry, exchangeRates } = useSelector((state) => state.marketplace);
+  const navigate = useNavigate();
+  const { selectedCountry } = useSelector((state) => state.marketplace);
+  // eslint-disable-next-line no-unused-vars
+  const stats = getPropertyStats(selectedCountry);
 
-  const [offerListings, setOfferListings] = useState([]);
-  const [rentListings, setRentListings] = useState([]);
-  const [saleListings, setSaleListings] = useState([]);
-  const [luxuryListings, setLuxuryListings] = useState([]);
-  const [recentListings, setRecentListings] = useState([]);
-  const [popularCities, setPopularCities] = useState([]);
-  const [stats, setStats] = useState({ totalProperties: 0, totalCountries: 0, totalCities: 0 });
-  const [loading, setLoading] = useState(true);
-  const [citiesLoading, setCitiesLoading] = useState(true);
+  const [offerListings, setOfferListings]   = useState([]);
+  const [rentListings, setRentListings]     = useState([]);
+  const [saleListings, setSaleListings]     = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [searchTerm, setSearchTerm]         = useState('');
+  const [type, setType]                     = useState('all');
+  const [propertyType, setPropertyType]     = useState('all');
+  const [minPrice, setMinPrice]             = useState('');
+  const [maxPrice, setMaxPrice]             = useState('');
 
-  const [featuredListing, setFeaturedListing] = useState(null);
-  const [featuredLoading, setFeaturedLoading] = useState(true);
-  const [hasAnyListings, setHasAnyListings] = useState(true);
-
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  // Main listing sections stay in sync with the selected country
-  useEffect(() => {
-    const countryParam = `country=${encodeURIComponent(selectedCountry)}`;
-
-    const fetchOfferListings = async () => {
-      try {
-        const res = await api.get(`/listing/get?offer=true&limit=12&${countryParam}`);
-        if (res.data.success) setOfferListings(res.data.data);
-      } catch (err) {
-        console.error('Failed to fetch offer listings', err);
-      }
-    };
-
-    const fetchRentListings = async () => {
-      try {
-        const res = await api.get(`/listing/get?type=rent&limit=12&${countryParam}`);
-        if (res.data.success) setRentListings(res.data.data);
-      } catch (err) {
-        console.error('Failed to fetch rent listings', err);
-      }
-    };
-
-    const fetchSaleListings = async () => {
-      try {
-        const res = await api.get(`/listing/get?type=sale&limit=12&${countryParam}`);
-        if (res.data.success) setSaleListings(res.data.data);
-      } catch (err) {
-        console.error('Failed to fetch sale listings', err);
-      }
-    };
-
-    const fetchLuxuryListings = async () => {
-      try {
-        const res = await api.get(`/listing/get?tier=luxury&limit=8&${countryParam}`);
-        if (res.data.success) setLuxuryListings(res.data.data);
-      } catch (err) {
-        console.error('Failed to fetch luxury listings', err);
-      }
-    };
-
-    const fetchRecentListings = async () => {
-      try {
-        const res = await api.get(`/listing/get?limit=8&sort=createdAt&order=desc&${countryParam}`);
-        if (res.data.success) setRecentListings(res.data.data);
-      } catch (err) {
-        console.error('Failed to fetch recently added listings', err);
-      }
-    };
-
-    const fetchAll = async () => {
-      setLoading(true);
-      await Promise.all([
-        fetchOfferListings(),
-        fetchRentListings(),
-        fetchSaleListings(),
-        fetchLuxuryListings(),
-        fetchRecentListings(),
-      ]);
-      setLoading(false);
-    };
-
-    fetchAll();
-  }, [selectedCountry]);
-
-  // Popular cities for the selected country
-  useEffect(() => {
-    const fetchCities = async () => {
-      setCitiesLoading(true);
-      try {
-        const res = await api.get(`/listing/cities?country=${encodeURIComponent(selectedCountry)}&limit=6`);
-        if (res.data.success) setPopularCities(res.data.data);
-      } catch (err) {
-        console.error('Failed to fetch popular cities', err);
-      } finally {
-        setCitiesLoading(false);
-      }
-    };
-    fetchCities();
-  }, [selectedCountry]);
-
-  // Marketplace-wide statistics (independent of selected country)
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await api.get('/listing/stats');
-        if (res.data.success) setStats(res.data.data);
-      } catch (err) {
-        console.error('Failed to fetch marketplace stats', err);
-      }
-    };
-    fetchStats();
-  }, []);
-
-  // Featured property changes whenever the selected country changes
-  useEffect(() => {
-    const fetchFeaturedListing = async () => {
-      setFeaturedLoading(true);
-      try {
-        const countryRes = await api.get(
-          `/listing/get?country=${encodeURIComponent(selectedCountry)}&limit=1&sort=price&order=desc`
-        );
-        const found = countryRes.data.success && countryRes.data.data.length > 0
-          ? countryRes.data.data[0]
-          : null;
-
-        setFeaturedListing(found);
-
-        if (found) {
-          setHasAnyListings(true);
-        } else {
-          const anyRes = await api.get('/listing/get?limit=1');
-          setHasAnyListings(Boolean(anyRes.data.success && anyRes.data.data.length > 0));
-        }
-      } catch (err) {
-        console.error('Failed to fetch featured listing', err);
-        setFeaturedListing(null);
-      } finally {
-        setFeaturedLoading(false);
-      }
-    };
-
-    fetchFeaturedListing();
-  }, [selectedCountry]);
-
-  const handleNewsletterSubmit = (e) => {
+  /* ── Search submission ─────────────────────────────────────── */
+  const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (!newsletterEmail.trim()) return;
-    setSubscribed(true);
-    setNewsletterEmail('');
+    const params = new URLSearchParams();
+    if (searchTerm)                           params.set('searchTerm', searchTerm);
+    if (type !== 'all')                       params.set('type', type);
+    if (propertyType !== 'all')               params.set('propertyType', propertyType);
+    if (minPrice)                             params.set('minPrice', minPrice);
+    if (maxPrice)                             params.set('maxPrice', maxPrice);
+    if (selectedCountry !== 'All Countries')  params.set('country', selectedCountry);
+    navigate(`/search?${params.toString()}`);
   };
 
-  const noCountryListings = !loading && offerListings.length === 0 && rentListings.length === 0 && saleListings.length === 0 && luxuryListings.length === 0 && recentListings.length === 0;
+  /* ── Data fetch ────────────────────────────────────────────── */
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      try {
+        setLoading(true);
+        const params = new URLSearchParams({ limit: 4 });
+        if (selectedCountry !== 'All Countries') params.append('country', selectedCountry);
 
+        const [offerRes, rentRes, saleRes] = await Promise.all([
+          api.get(`/listing/get?offer=true&${params.toString()}`),
+          api.get(`/listing/get?type=rent&${params.toString()}`),
+          api.get(`/listing/get?type=sale&${params.toString()}`),
+        ]);
+
+        setOfferListings(offerRes.data.data);
+        setRentListings(rentRes.data.data);
+        setSaleListings(saleRes.data.data);
+      } catch (err) {
+        console.error('Error fetching home listings:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHomeData();
+  }, [selectedCountry]);
+
+  const countryQS =
+    selectedCountry !== 'All Countries'
+      ? `&country=${encodeURIComponent(selectedCountry)}`
+      : '';
+
+  /* ── Render ────────────────────────────────────────────────── */
   return (
-    <main className="bg-slate-50 pb-16">
-      {/* Hero Section */}
-      <section className="mx-auto flex max-w-7xl flex-col gap-10 px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-          <div className="space-y-6">
-            <p className="inline-flex rounded-full bg-slate-200 px-4 py-1 text-sm font-semibold uppercase tracking-[0.3em] text-slate-600">
-              Real estate marketplace
+    <main className="flex flex-col bg-[#EBFADC] dark:bg-[#102F15] transition-colors duration-500">
+
+      {/* ═══════════════════════════════════════════════════════════
+          HERO
+      ═══════════════════════════════════════════════════════════ */}
+      <section className="min-h-screen flex flex-col justify-between pt-20">
+
+        {/* Split row: LEFT text · RIGHT image */}
+        <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-0 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-20 flex-1">
+
+          {/* ── LEFT: Headline + subtext ──────────────────────── */}
+          <div className="w-full lg:w-[54%] lg:pr-14 xl:pr-20">
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-[#728C5A]">
+              Premium Real Estate
             </p>
-            <h1 className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-              Discover homes that fit your lifestyle.
+
+            <h1
+              className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.08] tracking-tight"
+              style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+            >
+              <span className="block text-[#102F15] dark:text-white">
+                Find Your Perfect
+              </span>
+              <span className="block text-[#728C5A]">Property</span>
             </h1>
-            <p className="max-w-2xl text-lg leading-8 text-slate-600">
-              Browse curated listings across ten countries, save favorites, and manage your account with a polished modern experience built for buyers, sellers, and renters.
+
+            <p className="mt-6 text-base sm:text-lg leading-relaxed text-[#102F15]/60 dark:text-white/55 max-w-[380px]">
+              Discover the best places to live, rent, or invest around the world.
             </p>
-            <div className="flex flex-wrap gap-3">
+
+            {/* Quick-action links (secondary, unobtrusive) */}
+            <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                to="/search?country=all"
-                className="rounded-full bg-slate-800 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-700"
+                to={`/search?type=sale${countryQS}`}
+                className="inline-flex items-center gap-2 rounded-full border border-[#728C5A]/40 px-5 py-2.5 text-sm font-semibold text-[#728C5A] hover:bg-[#728C5A] hover:text-white hover:border-[#728C5A] transition-all duration-200"
               >
-                Start Exploring
+                For Sale
               </Link>
-              <Link to="/about" className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-medium text-slate-800 transition hover:border-slate-500 hover:text-slate-900">
-                Learn more
+              <Link
+                to={`/search?type=rent${countryQS}`}
+                className="inline-flex items-center gap-2 rounded-full border border-[#728C5A]/40 px-5 py-2.5 text-sm font-semibold text-[#728C5A] hover:bg-[#728C5A] hover:text-white hover:border-[#728C5A] transition-all duration-200"
+              >
+                For Rent
               </Link>
             </div>
           </div>
 
-          {/* Featured Property */}
-          <div className="w-full min-w-0 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-300/10">
-            {featuredLoading ? (
-              <div className="animate-pulse">
-                <div className="h-56 w-full bg-slate-200" />
-                <div className="space-y-3 p-6">
-                  <div className="h-3 w-1/3 rounded bg-slate-200" />
-                  <div className="h-6 w-3/4 rounded bg-slate-200" />
-                  <div className="h-4 w-full rounded bg-slate-200" />
-                  <div className="h-8 w-1/2 rounded bg-slate-200" />
-                </div>
+          {/* ── RIGHT: Villa image ────────────────────────────── */}
+          <div className="w-full lg:w-[46%] relative">
+            <div className="relative overflow-hidden rounded-3xl shadow-2xl">
+              <img
+                src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85"
+                alt="Luxury Forest Villa"
+                className="w-full h-64 sm:h-80 lg:h-[420px] object-cover transition-transform duration-700 hover:scale-105"
+              />
+              {/* Subtle left-edge gradient that blends image into page bg */}
+              <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#EBFADC] dark:from-[#102F15] to-transparent pointer-events-none" />
+            </div>
+
+            {/* Floating badge */}
+            <div className="absolute -bottom-4 left-4 sm:left-8 rounded-2xl px-4 py-3 shadow-xl backdrop-blur-sm bg-white/90 dark:bg-[#102F15]/90 border border-[#728C5A]/20 dark:border-white/10">
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Active Listings</p>
+              <p className="text-xl font-black text-[#728C5A]" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>
+                {stats.totalProperties.toLocaleString()}+
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── SEARCH BAR ────────────────────────────────────────── */}
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+          <div className="rounded-2xl shadow-xl border border-[#728C5A]/10 dark:border-white/5 bg-white dark:bg-[#1a3d20] px-4 py-3">
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex flex-col md:flex-row items-stretch md:items-center gap-2"
+            >
+
+              {/* Location */}
+              <div className="relative flex-[2] min-w-0">
+                <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search by city, state or country"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-xl py-3 pl-9 pr-4 text-sm outline-none transition bg-gray-50 dark:bg-[#102F15] text-[#102F15] dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-white/5 focus:border-[#728C5A] focus:ring-1 focus:ring-[#728C5A]"
+                />
               </div>
-            ) : featuredListing ? (
-              <article className="min-w-0">
-                <div className="relative h-56 w-full overflow-hidden bg-slate-100">
+
+              <div className="hidden md:block w-px self-stretch bg-gray-200 dark:bg-white/10 mx-1" />
+
+              {/* Rent / Sale */}
+              <div className="flex-1 min-w-[110px]">
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="w-full rounded-xl py-3 px-4 text-sm outline-none transition appearance-none cursor-pointer bg-gray-50 dark:bg-[#102F15] text-[#102F15] dark:text-white border border-gray-200 dark:border-white/5 focus:border-[#728C5A]"
+                >
+                  <option value="all">Rent / Sale</option>
+                  <option value="rent">Rent</option>
+                  <option value="sale">Sale</option>
+                </select>
+              </div>
+
+              <div className="hidden md:block w-px self-stretch bg-gray-200 dark:bg-white/10 mx-1" />
+
+              {/* Property Type */}
+              <div className="flex-1 min-w-[130px]">
+                <select
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                  className="w-full rounded-xl py-3 px-4 text-sm outline-none transition appearance-none cursor-pointer bg-gray-50 dark:bg-[#102F15] text-[#102F15] dark:text-white border border-gray-200 dark:border-white/5 focus:border-[#728C5A]"
+                >
+                  <option value="all">Property Type</option>
+                  <option value="house">House</option>
+                  <option value="apartment">Apartment</option>
+                  <option value="villa">Villa</option>
+                  <option value="condo">Condo</option>
+                </select>
+              </div>
+
+              <div className="hidden md:block w-px self-stretch bg-gray-200 dark:bg-white/10 mx-1" />
+
+              {/* Min Price */}
+              <div className="flex-1 min-w-[110px]">
+                <select
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  className="w-full rounded-xl py-3 px-4 text-sm outline-none transition appearance-none cursor-pointer bg-gray-50 dark:bg-[#102F15] text-[#102F15] dark:text-white border border-gray-200 dark:border-white/5 focus:border-[#728C5A]"
+                >
+                  <option value="">Min Price</option>
+                  <option value="100000">$100k</option>
+                  <option value="500000">$500k</option>
+                  <option value="1000000">$1M</option>
+                  <option value="5000000">$5M</option>
+                </select>
+              </div>
+
+              <div className="hidden md:block w-px self-stretch bg-gray-200 dark:bg-white/10 mx-1" />
+
+              {/* Max Price */}
+              <div className="flex-1 min-w-[110px]">
+                <select
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  className="w-full rounded-xl py-3 px-4 text-sm outline-none transition appearance-none cursor-pointer bg-gray-50 dark:bg-[#102F15] text-[#102F15] dark:text-white border border-gray-200 dark:border-white/5 focus:border-[#728C5A]"
+                >
+                  <option value="">Max Price</option>
+                  <option value="500000">$500k</option>
+                  <option value="1000000">$1M</option>
+                  <option value="5000000">$5M</option>
+                  <option value="10000000">$10M+</option>
+                </select>
+              </div>
+
+              {/* Search Button */}
+              <button
+                type="submit"
+                className="shrink-0 w-full md:w-auto rounded-xl px-8 py-3 text-sm font-bold text-white bg-[#728C5A] hover:bg-[#61784c] active:scale-[0.97] transition-all shadow-md"
+              >
+                Search
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════
+          MAIN CONTENT SECTIONS
+      ═══════════════════════════════════════════════════════════ */}
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pb-24 space-y-20">
+
+        {/* ── Featured / Special Offers ──────────────────────────── */}
+        {loading ? (
+          <div>
+            <SectionHeader title="Featured Properties" />
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          </div>
+        ) : offerListings.length > 0 && (
+          <div>
+            <SectionHeader
+              title="Featured Properties"
+              viewAllLink={`/search?offer=true${countryQS}`}
+            />
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {offerListings.map((listing) => (
+                <ListingCard listing={listing} key={listing._id} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Trust / Stats Bar (matches reference bottom strip) ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-10 border-t border-b border-[#728C5A]/15 dark:border-white/5">
+          {TRUST_ITEMS.map((item, idx) => (
+            <div key={idx} className="flex items-start gap-4">
+              <div className="flex-shrink-0 flex h-12 w-12 items-center justify-center rounded-xl border border-[#728C5A]/30 dark:border-[#728C5A]/40 text-[#728C5A]">
+                <item.icon className="text-xl" />
+              </div>
+              <div>
+                <h3 className="font-bold text-[#102F15] dark:text-white text-sm">{item.title}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed max-w-[180px]">
+                  {item.desc}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Global Destinations ───────────────────────────────── */}
+        {selectedCountry === 'All Countries' && (
+          <div>
+            <SectionHeader title="Global Destinations" viewAllLink="/search" />
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {POPULAR_CITIES.map((city) => (
+                <div
+                  key={city.name}
+                  onClick={() => navigate(`/search?city=${encodeURIComponent(city.name)}`)}
+                  className="group relative h-64 cursor-pointer overflow-hidden rounded-3xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                >
                   <img
-                    src={featuredListing.imageUrls?.[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80'}
-                    alt={`Featured property: ${featuredListing.title}`}
-                    loading="eager"
-                    className="h-full w-full object-cover"
+                    src={city.image}
+                    alt={city.name}
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  <span className="absolute top-4 left-4 rounded-full bg-slate-900/90 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white shadow-sm">
-                    Featured property
-                  </span>
-                </div>
-
-                <div className="min-w-0 p-6">
-                  <h2 className="line-clamp-1 text-xl font-bold text-slate-900">{featuredListing.title}</h2>
-
-                  <div className="mt-2 flex min-w-0 items-center gap-1.5 text-sm text-slate-500">
-                    <FaMapMarkerAlt aria-hidden="true" className="shrink-0 text-slate-400" />
-                    <p className="truncate">
-                      {[featuredListing.city, featuredListing.country].filter(Boolean).join(', ')}
-                    </p>
-                  </div>
-
-                  <p className="mt-3 line-clamp-2 text-sm text-slate-500">{featuredListing.description}</p>
-
-                  <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-slate-100 pt-4">
-                    <span className="min-w-0 max-w-full break-words text-2xl font-extrabold text-slate-900">
-                      {formatPrice(
-                        featuredListing.offer ? featuredListing.discountPrice : featuredListing.price,
-                        selectedCountry,
-                        exchangeRates
-                      )}
-                      {featuredListing.type === 'rent' && (
-                        <span className="text-sm font-normal text-slate-500"> / month</span>
-                      )}
-                    </span>
-                    <div className="flex shrink-0 items-center gap-3 text-xs font-medium text-slate-600">
-                      <span className="flex items-center gap-1">
-                        <FaBed aria-hidden="true" className="text-slate-400" /> {featuredListing.bedrooms} beds
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <FaBath aria-hidden="true" className="text-slate-400" /> {featuredListing.bathrooms} baths
-                      </span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#102F15]/90 via-[#102F15]/30 to-transparent transition-opacity group-hover:opacity-90" />
+                  <div className="absolute bottom-0 left-0 p-6">
+                    <h3
+                      className="text-2xl font-bold text-white"
+                      style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+                    >
+                      {city.name}
+                    </h3>
+                    <p className="mt-1 text-xs font-medium text-white/70">{city.country}</p>
+                    <div className="mt-2 inline-block rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider bg-[#728C5A] text-white">
+                      {city.properties} Properties
                     </div>
                   </div>
-
-                  <Link
-                    to={`/listing/${featuredListing._id}`}
-                    className="mt-5 block w-full rounded-full bg-slate-900 py-3 text-center text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                  >
-                    View Details
-                  </Link>
                 </div>
-              </article>
-            ) : (
-              <div className="p-8 text-center">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-400">Featured property</p>
-                {hasAnyListings ? (
-                  <p className="mt-4 text-lg font-semibold text-slate-700">
-                    No properties available in this country yet.
-                  </p>
-                ) : (
-                  <>
-                    <p className="mt-4 text-lg font-semibold text-slate-700">No listings available yet.</p>
-                    <p className="mt-2 text-sm text-slate-500">
-                      <Link to="/create-listing" className="font-semibold text-slate-900 hover:underline">
-                        Create the first listing
-                      </Link>{' '}
-                      to feature it here.
-                    </p>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Popular Cities */}
-        <section aria-labelledby="popular-cities-heading">
-          <div className="mb-8 border-b border-slate-100 pb-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-indigo-600">Explore by city</p>
-            <h2 id="popular-cities-heading" className="mt-2 text-3xl font-extrabold text-slate-900">Popular Cities</h2>
-          </div>
-          {citiesLoading ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, idx) => (
-                <div key={idx} className="h-32 animate-pulse rounded-3xl bg-slate-200" />
               ))}
             </div>
-          ) : popularCities.length === 0 ? (
-            <p className="rounded-3xl bg-white p-8 text-center text-slate-500 shadow-sm border border-slate-100">
-              No city data available for this country yet.
+          </div>
+        )}
+
+        {/* ── Premium Rentals ───────────────────────────────────── */}
+        {loading ? (
+          <div>
+            <SectionHeader title="Premium Rentals" />
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          </div>
+        ) : rentListings.length > 0 && (
+          <div>
+            <SectionHeader
+              title="Premium Rentals"
+              viewAllLink={`/search?type=rent${countryQS}`}
+            />
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {rentListings.map((listing) => (
+                <ListingCard listing={listing} key={listing._id} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Luxury Estates for Sale ───────────────────────────── */}
+        {loading ? (
+          <div>
+            <SectionHeader title="Luxury Estates for Sale" />
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          </div>
+        ) : saleListings.length > 0 && (
+          <div>
+            <SectionHeader
+              title="Luxury Estates for Sale"
+              viewAllLink={`/search?type=sale${countryQS}`}
+            />
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {saleListings.map((listing) => (
+                <ListingCard listing={listing} key={listing._id} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── The EstateHub Advantage ───────────────────────────── */}
+        <div className="rounded-3xl p-10 sm:p-14 bg-white dark:bg-[#0a1f0d]/60 border border-[#728C5A]/10 dark:border-white/5">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2
+              className="text-3xl font-bold text-[#102F15] dark:text-white"
+              style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+            >
+              The EstateHub Advantage
+            </h2>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">
+              Experience the pinnacle of real estate service with our premium platform
+              designed for discerning clients.
             </p>
-          ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {popularCities.map((cityEntry) => (
-                <Link
-                  key={`${cityEntry.city}-${cityEntry.country}`}
-                  to={`/search?city=${encodeURIComponent(cityEntry.city)}&country=${encodeURIComponent(cityEntry.country)}`}
-                  className="group relative flex h-32 flex-col justify-end overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 p-5 text-white shadow-sm transition hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              {
+                icon: FaShieldAlt,
+                title: 'Secure Transactions',
+                desc: 'Bank-grade security and verified listings ensure your peace of mind.',
+              },
+              {
+                icon: FaGlobe,
+                title: 'Global Portfolio',
+                desc: 'Access exclusive properties across ten premium international markets.',
+              },
+              {
+                icon: FaHandshake,
+                title: 'Concierge Service',
+                desc: 'Direct connection to elite agents and property managers.',
+              },
+            ].map((feature, idx) => (
+              <div
+                key={idx}
+                className="rounded-2xl p-8 text-center border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-[#EBFADC]/40 dark:bg-[#102F15] border-[#728C5A]/15 dark:border-white/10"
+              >
+                <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-[#728C5A]/10 dark:bg-[#728C5A]/20 text-[#728C5A]">
+                  <feature.icon className="text-xl" />
+                </div>
+                <h3
+                  className="mb-2 text-lg font-bold text-[#102F15] dark:text-white"
+                  style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
                 >
-                  {cityEntry.sampleImage && (
-                    <img
-                      src={cityEntry.sampleImage}
-                      alt=""
-                      loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover opacity-50 transition group-hover:scale-105 group-hover:opacity-40"
-                    />
-                  )}
-                  <div className="relative z-10">
-                    <h3 className="text-lg font-bold">{cityEntry.city}</h3>
-                    <p className="text-xs text-slate-200">
-                      {cityEntry.count} Propert{cityEntry.count === 1 ? 'y' : 'ies'} · Avg{' '}
-                      {formatPrice(cityEntry.avgPrice, selectedCountry, exchangeRates)}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Dynamic listing sections */}
-        <div className="mt-4 space-y-12">
-          {loading ? (
-            <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
-              <CardSkeletonGrid count={4} />
-            </div>
-          ) : noCountryListings ? (
-            <div className="rounded-3xl border border-slate-100 bg-white p-12 text-center shadow-sm">
-              {hasAnyListings ? (
-                <p className="text-lg font-semibold text-slate-700">
-                  No properties available in this country yet.
+                  {feature.title}
+                </h3>
+                <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                  {feature.desc}
                 </p>
-              ) : (
-                <>
-                  <p className="text-lg font-semibold text-slate-700">No listings yet.</p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    Be the first to{' '}
-                    <Link to="/create-listing" className="font-semibold text-slate-900 hover:underline">
-                      create a listing
-                    </Link>
-                    .
-                  </p>
-                </>
-              )}
-            </div>
-          ) : (
-            <>
-              {/* Luxury Collection */}
-              {luxuryListings.length > 0 && (
-                <section className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm" aria-labelledby="luxury-heading">
-                  <SectionHeader
-                    eyebrow="Premium Selection"
-                    eyebrowClass="text-amber-600"
-                    title="Luxury Collection"
-                    ctaTo="/search?tier=luxury"
-                    ctaLabel="Show More Luxury"
-                  />
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    {luxuryListings.map((listing) => (
-                      <ListingCard key={listing._id} listing={listing} />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Offers */}
-              {offerListings.length > 0 && (
-                <section className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
-                  <SectionHeader
-                    eyebrow="Great Deals"
-                    eyebrowClass="text-rose-600"
-                    title="Special Offers"
-                    ctaTo="/search?offer=true"
-                    ctaLabel="Show More Offers"
-                  />
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    {offerListings.map((listing) => (
-                      <ListingCard key={listing._id} listing={listing} />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Sales */}
-              {saleListings.length > 0 && (
-                <section className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
-                  <SectionHeader
-                    eyebrow="Properties to Buy"
-                    eyebrowClass="text-emerald-600"
-                    title="Recent Sales"
-                    ctaTo="/search?type=sale"
-                    ctaLabel="Show More Sales"
-                  />
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    {saleListings.map((listing) => (
-                      <ListingCard key={listing._id} listing={listing} />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Rents */}
-              {rentListings.length > 0 && (
-                <section className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
-                  <SectionHeader
-                    eyebrow="Leases Available"
-                    eyebrowClass="text-blue-600"
-                    title="Recent Rentals"
-                    ctaTo="/search?type=rent"
-                    ctaLabel="Show More Rentals"
-                  />
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    {rentListings.map((listing) => (
-                      <ListingCard key={listing._id} listing={listing} />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Recently Added */}
-              {recentListings.length > 0 && (
-                <section className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
-                  <SectionHeader
-                    eyebrow="Fresh on the Market"
-                    eyebrowClass="text-slate-500"
-                    title="Recently Added"
-                    ctaTo="/search?sort=createdAt&order=desc"
-                    ctaLabel="Show More"
-                  />
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    {recentListings.map((listing) => (
-                      <ListingCard key={listing._id} listing={listing} />
-                    ))}
-                  </div>
-                </section>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Why Choose EstateHub */}
-        <section aria-labelledby="why-choose-heading">
-          <div className="mb-8 border-b border-slate-100 pb-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Our promise</p>
-            <h2 id="why-choose-heading" className="mt-2 text-3xl font-extrabold text-slate-900">Why Choose EstateHub</h2>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {WHY_CHOOSE_ITEMS.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-md">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
-                  <Icon aria-hidden="true" />
-                </span>
-                <h3 className="mt-4 text-base font-bold text-slate-900">{title}</h3>
-                <p className="mt-1.5 text-sm text-slate-500">{desc}</p>
               </div>
             ))}
           </div>
-        </section>
+        </div>
 
-        {/* Testimonials */}
-        <section aria-labelledby="testimonials-heading">
-          <div className="mb-8 border-b border-slate-100 pb-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Trusted worldwide</p>
-            <h2 id="testimonials-heading" className="mt-2 text-3xl font-extrabold text-slate-900">What Our Users Say</h2>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {TESTIMONIALS.map((t) => (
-              <figure key={t.name} className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${t.color}`}>
-                    {t.initials}
-                  </span>
-                  <div>
-                    <figcaption className="text-sm font-bold text-slate-900">{t.name}</figcaption>
-                    <p className="text-xs text-slate-500">{t.country}</p>
-                  </div>
-                </div>
-                <div className="mt-3 flex gap-0.5 text-amber-400" aria-label={`${t.rating} out of 5 stars`}>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <FaStar key={i} aria-hidden="true" className={i < t.rating ? 'opacity-100' : 'opacity-20'} />
-                  ))}
-                </div>
-                <blockquote className="mt-3 text-sm leading-6 text-slate-600">&ldquo;{t.review}&rdquo;</blockquote>
-              </figure>
-            ))}
-          </div>
-        </section>
+        {/* ── Newsletter ────────────────────────────────────────── */}
+        <div className="relative overflow-hidden rounded-[2rem] px-8 py-16 sm:px-12 sm:py-20 text-center bg-[#102F15] dark:bg-[#0a1f0d]">
+          {/* Decorative background circles */}
+          <div className="pointer-events-none absolute -top-16 -right-16 h-72 w-72 rounded-full bg-[#728C5A]/10" />
+          <div className="pointer-events-none absolute -bottom-20 -left-20 h-80 w-80 rounded-full bg-[#728C5A]/8" />
 
-        {/* Statistics */}
-        <section className="rounded-3xl bg-slate-900 px-8 py-12 text-white" aria-labelledby="stats-heading">
-          <h2 id="stats-heading" className="sr-only">EstateHub statistics</h2>
-          <div className="grid gap-8 text-center sm:grid-cols-2 lg:grid-cols-5">
-            <div>
-              <AnimatedCounter value={stats.totalProperties || 0} suffix="+" />
-              <p className="mt-2 text-sm text-slate-300">Properties</p>
-            </div>
-            <div>
-              <AnimatedCounter value={stats.totalCountries || 0} />
-              <p className="mt-2 text-sm text-slate-300">Countries</p>
-            </div>
-            <div>
-              <AnimatedCounter value={stats.totalCities || 0} suffix="+" />
-              <p className="mt-2 text-sm text-slate-300">Cities</p>
-            </div>
-            <div>
-              <AnimatedCounter value={5000} suffix="+" />
-              <p className="mt-2 text-sm text-slate-300">Happy Customers</p>
-            </div>
-            <div>
-              <AnimatedCounter value={1200} suffix="+" />
-              <p className="mt-2 text-sm text-slate-300">Sales Completed</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Newsletter */}
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm sm:p-12" aria-labelledby="newsletter-heading">
-          <h2 id="newsletter-heading" className="text-2xl font-extrabold text-slate-900">Stay in the loop</h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-slate-500">
-            Get new listings and market updates for your selected country delivered to your inbox.
-          </p>
-          {subscribed ? (
-            <p className="mx-auto mt-6 max-w-md rounded-full bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-              Thanks for subscribing! You&apos;re on the list.
+          <div className="relative z-10 mx-auto max-w-xl">
+            <h2
+              className="text-3xl font-bold text-white sm:text-4xl"
+              style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+            >
+              Curated Luxury, Delivered.
+            </h2>
+            <p className="mx-auto mt-4 text-white/65 leading-relaxed">
+              Subscribe for exclusive off-market listings and international real
+              estate insights.
             </p>
-          ) : (
-            <form onSubmit={handleNewsletterSubmit} className="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:flex-row">
-              <label htmlFor="newsletter-email" className="sr-only">Email address</label>
+            <form className="mx-auto mt-8 flex max-w-md items-center gap-2 rounded-full p-2 bg-white/10 border border-white/15">
               <input
-                id="newsletter-email"
                 type="email"
+                placeholder="Enter your email address"
                 required
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full rounded-full border border-slate-300 px-5 py-3 text-sm outline-none focus:border-slate-500"
+                className="w-full bg-transparent px-4 py-2 text-sm outline-none text-white placeholder-white/40"
               />
               <button
                 type="submit"
-                className="shrink-0 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                className="shrink-0 rounded-full px-6 py-2.5 text-sm font-semibold text-white bg-[#728C5A] hover:bg-[#61784c] active:scale-[0.97] transition-all"
               >
                 Subscribe
               </button>
             </form>
-          )}
-        </section>
-      </section>
+          </div>
+        </div>
+
+      </div>
     </main>
   );
 }

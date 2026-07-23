@@ -1,20 +1,64 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600;1,700;1,800&family=Inter:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
+/* ═══════════════════════════════════════════════════
+   ESTATEHUB — LUXURY PALETTE (Sage / Dark Forest)
+═══════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Brand Colors ─────────────────────────────── */
+  --color-forest:      #102F15;   /* Dark Mode Primary */
+  --color-forest-light:#1a401f;   /* Hover state */
+  
+  --color-sage:        #728C5A;   /* Light Mode Primary / Dark Mode Secondary */
+  --color-sage-light:  #839b6b;   /* Hover */
+  --color-sage-dark:   #61784c;   /* Active */
+  
+  --color-mint:        #EBFADC;   /* Light Mode Background */
+  
+  /* ── Neutral Scale ────────────────────────────── */
+  --color-white:       #ffffff;
+  --color-light-bg:    #f4f9f1;   /* Secondary light background */
+  --color-gray-text:   #4a5568;
+  --color-dark-bg:     #0a1f0d;   /* Deeper than forest for dark mode background */
+
+  /* ── Heading Font ─────────────────────────────── */
+  --font-heading: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-body:    "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* ── Base Typography ──────────────────────────────── */
 :root {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #0f172a;
-  background-color: #f8fafc;
+  font-family: var(--font-body);
+  color: var(--color-forest);
+  background-color: var(--color-mint);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root.dark {
+  color: var(--color-white);
+  background-color: var(--color-forest);
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: #f8fafc;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Ensure body inherits from html (.dark) */
+html {
+  background-color: var(--color-mint);
+  color: var(--color-forest);
+}
+html.dark {
+  background-color: var(--color-forest);
+  color: var(--color-white);
 }
 
 * {
@@ -23,4 +67,63 @@ body {
 
 a {
   text-decoration: none;
+}
+
+/* ── Royal Heading Styles ─────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: #2C1B14;
+  letter-spacing: 0.01em;
+}
+
+h1 {
+  font-style: italic;
+  font-weight: 800;
+}
+
+h2 {
+  font-weight: 700;
+}
+
+h3 {
+  font-weight: 600;
+}
+
+/* ── Utility classes ──────────────────────────────── */
+.font-heading {
+  font-family: var(--font-heading) !important;
+}
+
+.font-royal {
+  font-family: var(--font-heading) !important;
+  font-style: italic;
+}
+
+/* ── Smooth transitions ───────────────────────────── */
+button, a, input, select, textarea {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* ── Form accent colors ───────────────────────────── */
+input[type="radio"],
+input[type="checkbox"] {
+  accent-color: #3D1F12;
+}
+
+/* ── Custom scrollbar (Webkit) ───────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F7F3EF;
+}
+::-webkit-scrollbar-thumb {
+  background: #D4C4B8;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #98755B;
 }

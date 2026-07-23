@@ -1,25 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { FaTimes } from 'react-icons/fa';
-import api from '../services/api.js';
+import { useSelector, useDispatch } from 'react-redux';
+import { FaFilter, FaTimes, FaGlobe, FaSearchLocation } from 'react-icons/fa';
 import ListingCard from '../components/ListingCard.jsx';
-import { countryList, setCountry } from '../redux/features/marketplace/marketplaceSlice.js';
-
-const DEFAULT_FILTERS = {
-  searchTerm: '',
-  type: 'all',
-  tier: 'all',
-  parking: false,
-  furnished: false,
-  offer: false,
-  minPrice: '',
-  maxPrice: '',
-  minBedrooms: '',
-  minBathrooms: '',
-  sort: 'createdAt',
-  order: 'desc',
-};
+import api from '../services/api.js';
+import { setCountry, countryCurrencyMap } from '../redux/features/marketplace/marketplaceSlice.js';
 
 function Search() {
   const navigate = useNavigate();
@@ -27,427 +12,463 @@ function Search() {
   const dispatch = useDispatch();
   const { selectedCountry } = useSelector((state) => state.marketplace);
 
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [country, setCountryFilter] = useState(selectedCountry);
-  const [city, setCityFilter] = useState('all');
-  const [cityOptions, setCityOptions] = useState([]);
+  const [sidebarData, setSidebarData] = useState({
+    searchTerm: '',
+    type: 'all',
+    parking: false,
+    furnished: false,
+    offer: false,
+    sort: 'created_at',
+    order: 'desc',
+    country: selectedCountry || 'All Countries',
+    city: '',
+  });
 
   const [loading, setLoading] = useState(false);
   const [listings, setListings] = useState([]);
-  const [totalCount, setTotalCount] = useState(0);
   const [showMore, setShowMore] = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
-  // Read filters (including country/city) from the URL whenever it changes
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
+    const searchTermFromUrl = urlParams.get('searchTerm');
+    const typeFromUrl = urlParams.get('type');
+    const parkingFromUrl = urlParams.get('parking');
+    const furnishedFromUrl = urlParams.get('furnished');
+    const offerFromUrl = urlParams.get('offer');
+    const sortFromUrl = urlParams.get('sort');
+    const orderFromUrl = urlParams.get('order');
+    const countryFromUrl = urlParams.get('country');
+    const cityFromUrl = urlParams.get('city');
 
-    const urlCountry = urlParams.get('country');
-    const effectiveCountry = urlCountry !== null ? urlCountry : selectedCountry;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCountryFilter(effectiveCountry);
-
-    // Keep the global country selector in sync when a specific (non-"all") country
-    // arrives via a link (e.g. a Popular City card), so currency/nav stay unified.
-    if (effectiveCountry !== 'all' && effectiveCountry !== selectedCountry && countryList.includes(effectiveCountry)) {
-      dispatch(setCountry(effectiveCountry));
-    }
-
-    setCityFilter(urlParams.get('city') || 'all');
-
-    setFilters({
-      searchTerm: urlParams.get('searchTerm') || '',
-      type: urlParams.get('type') || 'all',
-      tier: urlParams.get('tier') || 'all',
-      parking: urlParams.get('parking') === 'true',
-      furnished: urlParams.get('furnished') === 'true',
-      offer: urlParams.get('offer') === 'true',
-      minPrice: urlParams.get('minPrice') || '',
-      maxPrice: urlParams.get('maxPrice') || '',
-      minBedrooms: urlParams.get('minBedrooms') || '',
-      minBathrooms: urlParams.get('minBathrooms') || '',
-      sort: urlParams.get('sort') || 'createdAt',
-      order: urlParams.get('order') || 'desc',
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search]);
-
-  // Fetch results whenever the URL (source of truth) changes
-  useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    if (!urlParams.has('country')) {
-      urlParams.set('country', selectedCountry);
+    if (
+      searchTermFromUrl ||
+      typeFromUrl ||
+      parkingFromUrl ||
+      furnishedFromUrl ||
+      offerFromUrl ||
+      sortFromUrl ||
+      orderFromUrl ||
+      countryFromUrl ||
+      cityFromUrl
+    ) {
+      setSidebarData({
+        searchTerm: searchTermFromUrl || '',
+        type: typeFromUrl || 'all',
+        parking: parkingFromUrl === 'true',
+        furnished: furnishedFromUrl === 'true',
+        offer: offerFromUrl === 'true',
+        sort: sortFromUrl || 'created_at',
+        order: orderFromUrl || 'desc',
+        country: countryFromUrl || 'All Countries',
+        city: cityFromUrl || '',
+      });
     }
 
     const fetchListings = async () => {
+      setLoading(true);
+      setShowMore(false);
+      const searchQuery = urlParams.toString();
       try {
-        setLoading(true);
-        setShowMore(false);
-        const res = await api.get(`/listing/get?${urlParams.toString()}`);
-        if (res.data.success) {
-          setListings(res.data.data);
-          setTotalCount(res.data.data.length);
-          if (res.data.data.length === 12) {
-            setShowMore(true);
-          }
+        const res = await api.get(`/listing/get?${searchQuery}`);
+        setListings(res.data.data);
+        if (res.data.data.length > 8) {
+          setShowMore(true);
+        } else {
+          setShowMore(false);
         }
       } catch (err) {
-        console.error('Failed to fetch search results', err);
+        console.error('Failed to fetch listings', err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchListings();
-  }, [location.search, selectedCountry]);
+  }, [location.search]);
 
-  // Populate the city dropdown for whichever country is currently filtered
+  // Sync selectedCountry in Redux when sidebarData.country changes
   useEffect(() => {
-    const fetchCities = async () => {
-      try {
-        const countryParam = country && country !== 'all' ? `country=${encodeURIComponent(country)}&` : '';
-        const res = await api.get(`/listing/cities?${countryParam}limit=30`);
-        if (res.data.success) setCityOptions(res.data.data);
-      } catch (err) {
-        console.error('Failed to fetch city options', err);
-      }
-    };
-    fetchCities();
-  }, [country]);
+    if (sidebarData.country && sidebarData.country !== selectedCountry) {
+      dispatch(setCountry(sidebarData.country));
+    }
+  }, [sidebarData.country, selectedCountry, dispatch]);
 
   const handleChange = (e) => {
-    const { id, name, value, checked, type } = e.target;
+    if (
+      e.target.id === 'all' ||
+      e.target.id === 'rent' ||
+      e.target.id === 'sale'
+    ) {
+      setSidebarData({ ...sidebarData, type: e.target.id });
+    }
 
-    if (name === 'type') {
-      setFilters((prev) => ({ ...prev, type: value }));
-    } else if (type === 'checkbox') {
-      setFilters((prev) => ({ ...prev, [id]: checked }));
-    } else if (id === 'sort_order') {
-      const [sort, order] = value.split('_');
-      setFilters((prev) => ({ ...prev, sort: sort || 'createdAt', order: order || 'desc' }));
-    } else {
-      setFilters((prev) => ({ ...prev, [id]: value }));
+    if (e.target.id === 'searchTerm' || e.target.id === 'city') {
+      setSidebarData({ ...sidebarData, [e.target.id]: e.target.value });
+    }
+
+    if (e.target.id === 'country') {
+      setSidebarData({ ...sidebarData, country: e.target.value });
+    }
+
+    if (
+      e.target.id === 'parking' ||
+      e.target.id === 'furnished' ||
+      e.target.id === 'offer'
+    ) {
+      setSidebarData({
+        ...sidebarData,
+        [e.target.id]:
+          e.target.checked || e.target.checked === 'true',
+      });
+    }
+
+    if (e.target.id === 'sort_order') {
+      const sort = e.target.value.split('_')[0] || 'created_at';
+      const order = e.target.value.split('_')[1] || 'desc';
+      setSidebarData({ ...sidebarData, sort, order });
     }
   };
-
-  const buildUrlParams = useCallback(() => {
-    const urlParams = new URLSearchParams();
-    if (filters.searchTerm) urlParams.set('searchTerm', filters.searchTerm);
-    urlParams.set('type', filters.type);
-    if (filters.tier !== 'all') urlParams.set('tier', filters.tier);
-    if (filters.parking) urlParams.set('parking', 'true');
-    if (filters.furnished) urlParams.set('furnished', 'true');
-    if (filters.offer) urlParams.set('offer', 'true');
-    if (filters.minPrice) urlParams.set('minPrice', filters.minPrice);
-    if (filters.maxPrice) urlParams.set('maxPrice', filters.maxPrice);
-    if (filters.minBedrooms) urlParams.set('minBedrooms', filters.minBedrooms);
-    if (filters.minBathrooms) urlParams.set('minBathrooms', filters.minBathrooms);
-    urlParams.set('sort', filters.sort);
-    urlParams.set('order', filters.order);
-    urlParams.set('country', country);
-    if (city !== 'all') urlParams.set('city', city);
-    return urlParams;
-  }, [filters, country, city]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    navigate(`/search?${buildUrlParams().toString()}`);
+    const urlParams = new URLSearchParams();
+    urlParams.set('searchTerm', sidebarData.searchTerm);
+    urlParams.set('type', sidebarData.type);
+    urlParams.set('parking', sidebarData.parking);
+    urlParams.set('furnished', sidebarData.furnished);
+    urlParams.set('offer', sidebarData.offer);
+    urlParams.set('sort', sidebarData.sort);
+    urlParams.set('order', sidebarData.order);
+    
+    if (sidebarData.country !== 'All Countries') {
+      urlParams.set('country', sidebarData.country);
+    }
+    if (sidebarData.city) {
+      urlParams.set('city', sidebarData.city);
+    }
+
+    const searchQuery = urlParams.toString();
+    navigate(`/search?${searchQuery}`);
+    setIsMobileFiltersOpen(false); // Close mobile drawer on submit
   };
 
-  const handleClearFilters = () => {
-    navigate(`/search?country=${encodeURIComponent(selectedCountry)}`);
-  };
+  const onShowMoreClick = async () => {
+    const numberOfListings = listings.length;
+    const startIndex = numberOfListings;
+    const urlParams = new URLSearchParams(location.search);
+    urlParams.set('startIndex', startIndex);
+    const searchQuery = urlParams.toString();
 
-  const handleShowMore = async () => {
-    const urlParams = buildUrlParams();
-    urlParams.set('startIndex', listings.length);
     try {
-      const res = await api.get(`/listing/get?${urlParams.toString()}`);
-      if (res.data.success) {
-        setListings((prev) => [...prev, ...res.data.data]);
-        setTotalCount((prev) => prev + res.data.data.length);
-        setShowMore(res.data.data.length >= 12);
+      const res = await api.get(`/listing/get?${searchQuery}`);
+      if (res.data.data.length < 9) {
+        setShowMore(false);
       }
+      setListings([...listings, ...res.data.data]);
     } catch (err) {
-      console.error('Failed to load more results', err);
+      console.error('Failed to fetch more listings', err);
     }
   };
 
-  const activeFilterCount = [
-    filters.searchTerm, filters.type !== 'all', filters.tier !== 'all', filters.parking, filters.furnished,
-    filters.offer, filters.minPrice, filters.maxPrice, filters.minBedrooms, filters.minBathrooms,
-    city !== 'all',
-  ].filter(Boolean).length;
+  const handleClearFilters = () => {
+    const defaultData = {
+      searchTerm: '',
+      type: 'all',
+      parking: false,
+      furnished: false,
+      offer: false,
+      sort: 'created_at',
+      order: 'desc',
+      country: 'All Countries',
+      city: '',
+    };
+    setSidebarData(defaultData);
+    navigate('/search');
+    setIsMobileFiltersOpen(false);
+  };
+
+  const allCountries = ['All Countries', ...Object.keys(countryCurrencyMap)];
 
   return (
-    <main className="flex min-h-screen flex-col bg-slate-50 md:flex-row">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#EBFADC] dark:bg-[#102F15] transition-colors duration-500 pt-16">
+      
+      {/* Mobile Filter Toggle */}
+      <div className="md:hidden border-b p-4 flex justify-between items-center bg-white dark:bg-[#102F15] border-[#728C5A]/20 dark:border-white/10 sticky top-16 z-30">
+        <h1 className="text-xl font-bold text-[#102F15] dark:text-white" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>Properties</h1>
+        <button
+          onClick={() => setIsMobileFiltersOpen(true)}
+          className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm bg-[#728C5A] hover:bg-[#61784c]"
+        >
+          <FaFilter /> Filters
+        </button>
+      </div>
+
       {/* Sidebar Filters */}
-      <aside className="w-full shrink-0 border-r border-slate-200 bg-white p-8 md:min-h-screen md:w-80">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">Filters</h2>
-            {activeFilterCount > 0 && (
+      <div
+        className={`fixed inset-y-0 left-0 z-40 w-full md:w-80 md:static md:block md:min-h-screen md:shrink-0 transform transition-transform duration-300 ease-in-out bg-white dark:bg-[#102F15]/90 border-r border-[#728C5A]/10 dark:border-white/10 pt-16 md:pt-0`}
+      >
+        <div className="h-full flex flex-col">
+          {/* Sidebar Header (Mobile) */}
+          <div className="md:hidden flex items-center justify-between border-b p-4 border-[#728C5A]/20 dark:border-white/10">
+            <h2 className="text-lg font-bold text-[#102F15] dark:text-white">Filters</h2>
+            <button onClick={() => setIsMobileFiltersOpen(false)} className="p-2 text-[#728C5A] dark:text-gray-300">
+              <FaTimes className="text-xl" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8">
+            
+            {/* Search Term */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold uppercase tracking-wider block text-[#102F15] dark:text-white">
+                Search Keyword
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="searchTerm"
+                  placeholder="Beach house, modern..."
+                  value={sidebarData.searchTerm}
+                  onChange={handleChange}
+                  className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition bg-gray-50 dark:bg-black/20 text-[#102F15] dark:text-white border border-[#728C5A]/30 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
+                />
+                <FaSearchLocation className="absolute left-3.5 top-3.5 text-sm text-[#728C5A] dark:text-gray-400" />
+              </div>
+            </div>
+
+            {/* Location (Country & City) */}
+            <div className="space-y-4 pt-6 border-t border-[#728C5A]/20 dark:border-white/10">
+              <label className="text-sm font-semibold uppercase tracking-wider block text-[#102F15] dark:text-white">
+                Location
+              </label>
+              
+              <div className="space-y-3">
+                <div className="relative">
+                  <select
+                    id="country"
+                    value={sidebarData.country}
+                    onChange={handleChange}
+                    className="w-full appearance-none rounded-xl pl-10 pr-10 py-2.5 text-sm font-medium outline-none transition bg-gray-50 dark:bg-black/20 text-[#102F15] dark:text-white border border-[#728C5A]/30 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
+                  >
+                    {allCountries.map((c) => (
+                      <option key={c} value={c} className="text-gray-900">{c}</option>
+                    ))}
+                  </select>
+                  <FaGlobe className="absolute left-3.5 top-3.5 text-sm text-[#728C5A] dark:text-gray-400" />
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#728C5A] dark:text-gray-400">
+                    <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                    </svg>
+                  </div>
+                </div>
+
+                <input
+                  type="text"
+                  id="city"
+                  placeholder="City (e.g. New York)"
+                  value={sidebarData.city}
+                  onChange={handleChange}
+                  className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition bg-gray-50 dark:bg-black/20 text-[#102F15] dark:text-white border border-[#728C5A]/30 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
+                />
+              </div>
+            </div>
+
+            {/* Property Type */}
+            <div className="space-y-3 pt-6 border-t border-[#728C5A]/20 dark:border-white/10">
+              <label className="text-sm font-semibold uppercase tracking-wider block text-[#102F15] dark:text-white">
+                Listing Type
+              </label>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-3 font-medium text-[#102F15] dark:text-white">
+                  <input
+                    type="radio"
+                    id="all"
+                    name="type"
+                    checked={sidebarData.type === 'all'}
+                    onChange={handleChange}
+                    className="h-4 w-4 accent-[#728C5A]"
+                  />
+                  <span>All Properties</span>
+                </label>
+                <label className="flex items-center gap-3 font-medium text-[#102F15] dark:text-white">
+                  <input
+                    type="radio"
+                    id="rent"
+                    name="type"
+                    checked={sidebarData.type === 'rent'}
+                    onChange={handleChange}
+                    className="h-4 w-4 accent-[#728C5A]"
+                  />
+                  <span>For Rent</span>
+                </label>
+                <label className="flex items-center gap-3 font-medium text-[#102F15] dark:text-white">
+                  <input
+                    type="radio"
+                    id="sale"
+                    name="type"
+                    checked={sidebarData.type === 'sale'}
+                    onChange={handleChange}
+                    className="h-4 w-4 accent-[#728C5A]"
+                  />
+                  <span>For Sale</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Amenities & Offers */}
+            <div className="space-y-3 pt-6 border-t border-[#728C5A]/20 dark:border-white/10">
+              <label className="text-sm font-semibold uppercase tracking-wider block text-[#102F15] dark:text-white">
+                Features
+              </label>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-3 font-medium text-[#102F15] dark:text-white">
+                  <input
+                    type="checkbox"
+                    id="parking"
+                    checked={sidebarData.parking}
+                    onChange={handleChange}
+                    className="h-4 w-4 rounded accent-[#728C5A]"
+                  />
+                  <span>Parking Available</span>
+                </label>
+                <label className="flex items-center gap-3 font-medium text-[#102F15] dark:text-white">
+                  <input
+                    type="checkbox"
+                    id="furnished"
+                    checked={sidebarData.furnished}
+                    onChange={handleChange}
+                    className="h-4 w-4 rounded accent-[#728C5A]"
+                  />
+                  <span>Furnished</span>
+                </label>
+                <label className="flex items-center gap-3 font-medium text-[#102F15] dark:text-white">
+                  <input
+                    type="checkbox"
+                    id="offer"
+                    checked={sidebarData.offer}
+                    onChange={handleChange}
+                    className="h-4 w-4 rounded accent-[#728C5A]"
+                  />
+                  <span>Special Offers Only</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Sort */}
+            <div className="space-y-3 pt-6 border-t border-[#728C5A]/20 dark:border-white/10">
+              <label className="text-sm font-semibold uppercase tracking-wider block text-[#102F15] dark:text-white">
+                Sort By
+              </label>
+              <div className="relative">
+                <select
+                  id="sort_order"
+                  onChange={handleChange}
+                  value={`${sidebarData.sort}_${sidebarData.order}`}
+                  className="w-full appearance-none rounded-xl px-4 py-2.5 text-sm font-medium outline-none transition bg-gray-50 dark:bg-black/20 text-[#102F15] dark:text-white border border-[#728C5A]/30 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
+                >
+                  <option value="created_at_desc" className="text-gray-900">Newest First</option>
+                  <option value="created_at_asc" className="text-gray-900">Oldest First</option>
+                  <option value="price_desc" className="text-gray-900">Price: High to Low</option>
+                  <option value="price_asc" className="text-gray-900">Price: Low to High</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[#728C5A] dark:text-gray-400">
+                  <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-8 pb-10 md:pb-0 space-y-3">
+              <button
+                type="submit"
+                className="w-full rounded-xl py-3 text-sm font-semibold text-white shadow-md bg-[#728C5A] hover:bg-[#61784c] transition"
+              >
+                Apply Filters
+              </button>
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-rose-600"
+                className="w-full rounded-xl py-3 text-sm font-semibold transition bg-transparent text-[#728C5A] hover:text-[#61784c] dark:text-gray-300 dark:hover:text-white"
               >
-                <FaTimes aria-hidden="true" /> Clear Filters
+                Clear All
               </button>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="searchTerm">
-              Search Text
-            </label>
-            <input
-              id="searchTerm"
-              type="text"
-              value={filters.searchTerm}
-              onChange={handleChange}
-              placeholder="e.g. villa, Tokyo, condo"
-              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none transition focus:border-slate-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="country-filter">
-              Country
-            </label>
-            <select
-              id="country-filter"
-              value={country}
-              onChange={(e) => { setCountryFilter(e.target.value); setCityFilter('all'); }}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-500"
-            >
-              <option value="all">All Countries</option>
-              {countryList.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="city-filter">
-              City
-            </label>
-            <select
-              id="city-filter"
-              value={city}
-              onChange={(e) => setCityFilter(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-500"
-            >
-              <option value="all">All Cities</option>
-              {cityOptions.map((c) => (
-                <option key={`${c.city}-${c.country}`} value={c.city}>{c.city} ({c.count})</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-3">
-            <span className="block text-sm font-semibold text-slate-700">Type</span>
-            <div className="flex flex-col gap-2">
-              {[
-                { value: 'all', label: 'Rent & Sale' },
-                { value: 'rent', label: 'Rent Only' },
-                { value: 'sale', label: 'Sale Only' },
-              ].map((opt) => (
-                <label key={opt.value} className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <input
-                    type="radio"
-                    name="type"
-                    value={opt.value}
-                    checked={filters.type === opt.value}
-                    onChange={handleChange}
-                    className="h-4 w-4 accent-slate-800"
-                  />
-                  {opt.label}
-                </label>
-              ))}
             </div>
-          </div>
+          </form>
+        </div>
+      </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="tier">
-              Property Tier
-            </label>
-            <select
-              id="tier"
-              value={filters.tier}
-              onChange={handleChange}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-500"
-            >
-              <option value="all">All Tiers</option>
-              <option value="affordable">Affordable</option>
-              <option value="mid">Mid-range</option>
-              <option value="luxury">Luxury</option>
-            </select>
-          </div>
-
-          <div className="space-y-3">
-            <span className="block text-sm font-semibold text-slate-700">Price Range (USD)</span>
-            <div className="flex items-center gap-2">
-              <input
-                id="minPrice"
-                type="number"
-                min="0"
-                placeholder="Min"
-                value={filters.minPrice}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-slate-500"
-              />
-              <span className="text-slate-400">–</span>
-              <input
-                id="maxPrice"
-                type="number"
-                min="0"
-                placeholder="Max"
-                value={filters.maxPrice}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-slate-500"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="minBedrooms">
-                Bedrooms
-              </label>
-              <select
-                id="minBedrooms"
-                value={filters.minBedrooms}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-500"
-              >
-                <option value="">Any</option>
-                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}+</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="minBathrooms">
-                Bathrooms
-              </label>
-              <select
-                id="minBathrooms"
-                value={filters.minBathrooms}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-500"
-              >
-                <option value="">Any</option>
-                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}+</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <span className="block text-sm font-semibold text-slate-700">Amenities & Offers</span>
-            <div className="flex flex-col gap-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <input id="parking" type="checkbox" checked={filters.parking} onChange={handleChange} className="h-4 w-4 rounded border-slate-300 accent-slate-800" />
-                Parking Spot
-              </label>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <input id="furnished" type="checkbox" checked={filters.furnished} onChange={handleChange} className="h-4 w-4 rounded border-slate-300 accent-slate-800" />
-                Furnished
-              </label>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <input id="offer" type="checkbox" checked={filters.offer} onChange={handleChange} className="h-4 w-4 rounded border-slate-300 accent-slate-800" />
-                Special Offer
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="sort_order">
-              Sort By
-            </label>
-            <select
-              id="sort_order"
-              onChange={handleChange}
-              value={`${filters.sort}_${filters.order}`}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-500"
-            >
-              <option value="createdAt_desc">Newest First</option>
-              <option value="createdAt_desc">Recently Added</option>
-              <option value="createdAt_asc">Oldest First</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-              <option value="createdAt_desc">Most Popular</option>
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full rounded-xl bg-slate-900 py-3 font-semibold text-white transition hover:bg-slate-800"
+      {/* Main Content (Results) */}
+      <div className="flex-1 p-6 sm:p-10">
+        <div className="mb-8 flex flex-col gap-2">
+          <h1
+            className="text-4xl text-[#102F15] dark:text-white"
+            style={{ fontFamily: '"Playfair Display", Georgia, serif', fontStyle: 'italic', fontWeight: 700 }}
           >
-            Apply Filters
-          </button>
-        </form>
-      </aside>
-
-      {/* Search Results */}
-      <section className="flex-1 p-8">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-4">
-          <h1 className="text-3xl font-extrabold text-slate-900">Listing Results</h1>
-          {!loading && (
-            <p className="text-sm font-semibold text-slate-500">
-              Showing {totalCount} Propert{totalCount === 1 ? 'y' : 'ies'}
-            </p>
-          )}
+            Property Results
+          </h1>
+          <p className="text-sm font-medium text-[#728C5A] dark:text-gray-300">
+            {!loading && (
+              <>Showing {listings.length} properties {sidebarData.country !== 'All Countries' && `in ${sidebarData.country}`}</>
+            )}
+          </p>
         </div>
 
-        {loading ? (
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, idx) => (
-              <div key={idx} className="animate-pulse overflow-hidden rounded-3xl border border-slate-100 bg-white">
-                <div className="h-56 w-full bg-slate-200" />
-                <div className="space-y-3 p-6">
-                  <div className="h-4 w-3/4 rounded bg-slate-200" />
-                  <div className="h-3 w-1/2 rounded bg-slate-200" />
-                  <div className="h-3 w-full rounded bg-slate-200" />
+        {loading && (
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="overflow-hidden rounded-2xl border bg-white dark:bg-[#102F15]/50 p-4 border-[#728C5A]/20 dark:border-white/10">
+                <div className="h-56 w-full animate-pulse rounded-xl bg-gray-200 dark:bg-black/20" />
+                <div className="mt-4 h-6 w-3/4 animate-pulse rounded-md bg-gray-200 dark:bg-black/20" />
+                <div className="mt-2 h-4 w-1/2 animate-pulse rounded-md bg-gray-200 dark:bg-black/20" />
+                <div className="mt-6 flex gap-2">
+                  <div className="h-4 w-1/4 animate-pulse rounded-md bg-gray-200 dark:bg-black/20" />
+                  <div className="h-4 w-1/4 animate-pulse rounded-md bg-gray-200 dark:bg-black/20" />
                 </div>
               </div>
             ))}
           </div>
-        ) : listings.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-20 text-center">
-            <p className="text-lg font-semibold text-slate-700">
-              No properties available in this country yet.
-            </p>
-            <p className="max-w-md text-sm text-slate-500">
-              Try clearing your filters or choosing a different country or city.
+        )}
+
+        {!loading && listings.length === 0 && (
+          <div className="flex min-h-[40vh] flex-col items-center justify-center rounded-3xl border border-dashed p-10 text-center bg-white dark:bg-[#102F15]/30 border-[#728C5A]/30 dark:border-white/20">
+            <FaSearchLocation className="mb-4 text-5xl text-[#728C5A]/60" />
+            <h2 className="text-2xl font-bold mb-2 text-[#102F15] dark:text-white" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>
+              No properties found
+            </h2>
+            <p className="max-w-md text-sm text-gray-500 dark:text-gray-400">
+              We couldn't find any listings matching your current filters. Try adjusting your search criteria or clearing filters.
             </p>
             <button
-              type="button"
               onClick={handleClearFilters}
-              className="rounded-full border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-800 transition hover:border-slate-500 hover:text-slate-900"
+              className="mt-6 rounded-full px-6 py-2.5 text-sm font-semibold transition border-2 border-[#728C5A]/30 text-[#102F15] dark:text-white hover:bg-[#728C5A]/10"
             >
               Clear Filters
             </button>
           </div>
-        ) : (
-          <div className="mt-8 space-y-8">
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {listings.map((listing) => (
-                <ListingCard key={listing._id} listing={listing} />
-              ))}
-            </div>
+        )}
 
-            {showMore && (
-              <div className="flex justify-center pt-4">
-                <button
-                  onClick={handleShowMore}
-                  className="rounded-full border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-800 transition hover:border-slate-500 hover:text-slate-900"
-                >
-                  Show More
-                </button>
-              </div>
-            )}
+        {!loading && listings.length > 0 && (
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            {listings.map((listing) => (
+              <ListingCard key={listing._id} listing={listing} />
+            ))}
           </div>
         )}
-      </section>
-    </main>
+
+        {showMore && (
+          <div className="mt-12 text-center">
+            <button
+              onClick={onShowMoreClick}
+              className="rounded-full border-2 px-8 py-3 text-sm font-semibold transition border-[#728C5A] text-[#728C5A] hover:bg-[#728C5A] hover:text-white"
+            >
+              Load More Properties
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

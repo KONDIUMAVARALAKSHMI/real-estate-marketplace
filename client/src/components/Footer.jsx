@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { FaHome, FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
+import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
 import { countryList } from '../redux/features/marketplace/marketplaceSlice.js';
 
 const POPULAR_CITIES = ['New York', 'Mumbai', 'Tokyo', 'London', 'Sydney', 'Dubai'];
@@ -8,73 +8,96 @@ function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-slate-200 bg-white text-slate-700">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+    <footer className="bg-[#102F15] dark:bg-[#0a1f0d] text-white/80 transition-colors duration-500 border-t border-[#728C5A]/10">
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
+
           {/* Brand */}
           <div className="lg:col-span-2">
-            <Link to="/" className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-white">
-                <FaHome aria-hidden="true" />
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <span
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-sm transition group-hover:opacity-90 bg-[#728C5A]"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
+                  <path d="M9 21V12h6v9" />
+                </svg>
               </span>
-              <span className="text-lg font-bold text-slate-900">EstateHub</span>
+              <span
+                className="text-xl text-white"
+                style={{ fontFamily: '"Playfair Display", Georgia, serif', fontStyle: 'italic', fontWeight: 700 }}
+              >
+                EstateHub
+              </span>
             </Link>
-            <p className="mt-3 max-w-xs text-sm text-slate-500">
-              A modern, international real estate marketplace for buyers, sellers, and renters
-              across ten countries.
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/60">
+              A modern, international luxury real estate marketplace for buyers, sellers, and renters across ten countries.
             </p>
-            <div className="mt-5 flex items-center gap-3 text-slate-400">
-              <a href="#" aria-label="Facebook" className="transition hover:text-slate-900"><FaFacebook aria-hidden="true" /></a>
-              <a href="#" aria-label="Twitter" className="transition hover:text-slate-900"><FaTwitter aria-hidden="true" /></a>
-              <a href="#" aria-label="Instagram" className="transition hover:text-slate-900"><FaInstagram aria-hidden="true" /></a>
-              <a href="#" aria-label="LinkedIn" className="transition hover:text-slate-900"><FaLinkedin aria-hidden="true" /></a>
+            <div className="mt-5 flex items-center gap-4 text-white/50">
+              <a href="#" aria-label="Facebook" className="transition hover:text-[#EBFADC]"><FaFacebook aria-hidden="true" /></a>
+              <a href="#" aria-label="Twitter" className="transition hover:text-[#EBFADC]"><FaTwitter aria-hidden="true" /></a>
+              <a href="#" aria-label="Instagram" className="transition hover:text-[#EBFADC]"><FaInstagram aria-hidden="true" /></a>
+              <a href="#" aria-label="LinkedIn" className="transition hover:text-[#EBFADC]"><FaLinkedin aria-hidden="true" /></a>
             </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Quick Links</h3>
-            <ul className="mt-4 space-y-2.5 text-sm text-slate-500">
-              <li><Link to="/" className="hover:text-slate-900">Home</Link></li>
-              <li><Link to="/search?country=all" className="hover:text-slate-900">Browse Properties</Link></li>
-              <li><Link to="/about" className="hover:text-slate-900">About</Link></li>
-              <li><Link to="/create-listing" className="hover:text-slate-900">List a Property</Link></li>
+            <h3
+              className="text-xs font-bold uppercase tracking-widest mb-4 text-[#728C5A]"
+            >
+              Quick Links
+            </h3>
+            <ul className="space-y-2.5 text-sm text-white/70">
+              <li><Link to="/" className="transition hover:text-white">Home</Link></li>
+              <li><Link to="/search?country=all" className="transition hover:text-white">Browse Properties</Link></li>
+              <li><Link to="/about" className="transition hover:text-white">About</Link></li>
+              <li><Link to="/create-listing" className="transition hover:text-white">List a Property</Link></li>
             </ul>
           </div>
 
           {/* Countries */}
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Countries</h3>
-            <ul className="mt-4 space-y-2.5 text-sm text-slate-500">
+            <h3
+              className="text-xs font-bold uppercase tracking-widest mb-4 text-[#728C5A]"
+            >
+              Countries
+            </h3>
+            <ul className="space-y-2.5 text-sm text-white/70">
               {countryList.slice(0, 6).map((c) => (
                 <li key={c}>
-                  <Link to={`/search?country=${encodeURIComponent(c)}`} className="hover:text-slate-900">{c}</Link>
+                  <Link to={`/search?country=${encodeURIComponent(c)}`} className="transition hover:text-white">{c}</Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Popular Cities + Support */}
+          {/* Popular Cities */}
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Popular Cities</h3>
-            <ul className="mt-4 space-y-2.5 text-sm text-slate-500">
+            <h3
+              className="text-xs font-bold uppercase tracking-widest mb-4 text-[#728C5A]"
+            >
+              Popular Cities
+            </h3>
+            <ul className="space-y-2.5 text-sm text-white/70">
               {POPULAR_CITIES.map((city) => (
                 <li key={city}>
-                  <Link to={`/search?city=${encodeURIComponent(city)}`} className="hover:text-slate-900">{city}</Link>
+                  <Link to={`/search?city=${encodeURIComponent(city)}`} className="transition hover:text-white">{city}</Link>
                 </li>
               ))}
             </ul>
           </div>
         </div>
 
-        <div className="mt-10 grid gap-4 border-t border-slate-100 pt-6 sm:flex sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs font-medium text-slate-500">
-            <Link to="/contact" className="hover:text-slate-900">Support</Link>
-            <Link to="/privacy" className="hover:text-slate-900">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-slate-900">Terms</Link>
-            <Link to="/contact" className="hover:text-slate-900">Contact</Link>
+        {/* Bottom Bar */}
+        <div className="mt-12 pt-6 border-t grid gap-4 sm:flex sm:items-center sm:justify-between border-[#728C5A]/20">
+          <p className="text-xs text-white/50">
+            &copy; {year} EstateHub International. All rights reserved.
+          </p>
+          <div className="flex gap-6 text-xs text-white/50">
+            <Link to="/privacy" className="transition hover:text-white">Privacy Policy</Link>
+            <Link to="/terms" className="transition hover:text-white">Terms of Service</Link>
           </div>
-          <p className="text-xs text-slate-400">&copy; {year} EstateHub. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -39,18 +39,18 @@ function MortgageCalculator({ priceInLocalCurrency, selectedCountry }) {
   const fmt = (val) => formatLocalAmount(val, selectedCountry);
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+    <div className="rounded-2xl border p-6 bg-white dark:bg-[#102F15] border-[#728C5A]/20 dark:border-white/10 transition-colors">
       <div className="flex items-center gap-2">
-        <FaCalculator aria-hidden="true" className="text-slate-500" />
-        <h3 className="text-base font-bold text-slate-900">Mortgage Estimate</h3>
+        <FaCalculator aria-hidden="true" className="text-[#728C5A]" />
+        <h3 className="text-base font-bold text-[#102F15] dark:text-white">Mortgage Estimate</h3>
       </div>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
         A rough estimate only — actual rates and terms depend on your lender.
       </p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-3">
         <div>
-          <label htmlFor="downPayment" className="mb-1 block text-xs font-semibold text-slate-600">
+          <label htmlFor="downPayment" className="mb-1 block text-xs font-semibold text-[#102F15] dark:text-white">
             Down Payment ({downPaymentPercent}%)
           </label>
           <input
@@ -61,11 +61,11 @@ function MortgageCalculator({ priceInLocalCurrency, selectedCountry }) {
             step="5"
             value={downPaymentPercent}
             onChange={(e) => setDownPaymentPercent(Number(e.target.value))}
-            className="w-full accent-slate-800"
+            className="w-full accent-[#728C5A]"
           />
         </div>
         <div>
-          <label htmlFor="interestRate" className="mb-1 block text-xs font-semibold text-slate-600">
+          <label htmlFor="interestRate" className="mb-1 block text-xs font-semibold text-[#102F15] dark:text-white">
             Interest Rate ({interestRate}%)
           </label>
           <input
@@ -76,11 +76,11 @@ function MortgageCalculator({ priceInLocalCurrency, selectedCountry }) {
             step="0.1"
             value={interestRate}
             onChange={(e) => setInterestRate(Number(e.target.value))}
-            className="w-full accent-slate-800"
+            className="w-full accent-[#728C5A]"
           />
         </div>
         <div>
-          <label htmlFor="loanTerm" className="mb-1 block text-xs font-semibold text-slate-600">
+          <label htmlFor="loanTerm" className="mb-1 block text-xs font-semibold text-[#102F15] dark:text-white">
             Loan Term ({loanTermYears} yrs)
           </label>
           <input
@@ -91,23 +91,23 @@ function MortgageCalculator({ priceInLocalCurrency, selectedCountry }) {
             step="5"
             value={loanTermYears}
             onChange={(e) => setLoanTermYears(Number(e.target.value))}
-            className="w-full accent-slate-800"
+            className="w-full accent-[#728C5A]"
           />
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 border-t border-slate-200 pt-5 sm:grid-cols-3">
+      <div className="mt-6 grid gap-4 border-t pt-5 sm:grid-cols-3" style={{ borderColor: '#E8DDD4' }}>
         <div>
-          <p className="text-xs font-semibold uppercase text-slate-400">Down Payment</p>
-          <p className="mt-1 truncate text-lg font-bold text-slate-900">{fmt(downPaymentAmount)}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#98755B' }}>Down Payment</p>
+          <p className="mt-1 truncate text-lg font-bold" style={{ color: '#2C1B14' }}>{fmt(downPaymentAmount)}</p>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase text-slate-400">Loan Amount</p>
-          <p className="mt-1 truncate text-lg font-bold text-slate-900">{fmt(loanAmount)}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#98755B' }}>Loan Amount</p>
+          <p className="mt-1 truncate text-lg font-bold" style={{ color: '#2C1B14' }}>{fmt(loanAmount)}</p>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase text-slate-400">Est. Monthly Payment</p>
-          <p className="mt-1 truncate text-lg font-bold text-slate-900">{fmt(monthlyPayment)}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#98755B' }}>Est. Monthly Payment</p>
+          <p className="mt-1 truncate text-lg font-bold" style={{ color: '#2C1B14' }}>{fmt(monthlyPayment)}</p>
         </div>
       </div>
     </div>
@@ -209,19 +209,22 @@ function Listing() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="text-lg font-semibold text-slate-600">Loading property...</div>
+      <div className="flex min-h-screen items-center justify-center bg-[#EBFADC] dark:bg-[#102F15]">
+        <div className="text-lg font-semibold text-[#728C5A] animate-pulse">Loading property details...</div>
       </div>
     );
   }
 
   if (error || !listing) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <p className="mb-4 font-semibold text-red-600">{error || 'Something went wrong.'}</p>
-          <Link to="/" className="rounded-xl bg-slate-900 px-6 py-2.5 font-medium text-white transition hover:bg-slate-800">
-            Back Home
+      <div className="flex min-h-screen items-center justify-center bg-[#EBFADC] dark:bg-[#102F15]">
+        <div className="max-w-md rounded-3xl border p-8 text-center shadow-sm bg-white dark:bg-[#102F15] border-[#728C5A]/20 dark:border-white/10">
+          <p className="mb-4 font-semibold text-red-500">{error || 'Something went wrong.'}</p>
+          <Link
+            to="/"
+            className="rounded-xl px-6 py-2.5 font-medium text-white transition bg-[#728C5A] hover:bg-[#61784c]"
+          >
+            Back to Home
           </Link>
         </div>
       </div>
@@ -237,9 +240,10 @@ function Listing() {
   const priceInLocalCurrency = convertPrice(listing.price, selectedCountry, exchangeRates);
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-16">
-      {/* Image Slider */}
-      <div className="relative h-[450px] w-full overflow-hidden bg-slate-200 shadow-inner">
+    <main className="min-h-screen pb-24 bg-[#EBFADC] dark:bg-[#102F15] transition-colors duration-500 pt-16">
+      
+      {/* ── Image Gallery Slider ────────────────────────── */}
+      <div className="relative h-[550px] w-full overflow-hidden bg-black/80">
         <img
           src={listing.imageUrls[currentImageIndex] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80'}
           alt={`${listing.title} — photo ${currentImageIndex + 1} of ${totalImages}`}
@@ -252,7 +256,7 @@ function Listing() {
               type="button"
               aria-label="Previous image"
               onClick={handlePrevImage}
-              className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-slate-950/60 text-white backdrop-blur-sm transition hover:bg-slate-950/80"
+              className="absolute left-6 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60 hover:scale-105"
             >
               <FaChevronLeft aria-hidden="true" />
             </button>
@@ -260,18 +264,18 @@ function Listing() {
               type="button"
               aria-label="Next image"
               onClick={handleNextImage}
-              className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-slate-950/60 text-white backdrop-blur-sm transition hover:bg-slate-950/80"
+              className="absolute right-6 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60 hover:scale-105"
             >
               <FaChevronRight aria-hidden="true" />
             </button>
 
-            <div className="absolute bottom-4 right-4">
-              <span className="rounded-full bg-slate-950/70 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
+            <div className="absolute bottom-6 right-6">
+              <span className="rounded-full bg-black/50 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md border border-white/20">
                 {currentImageIndex + 1} / {totalImages}
               </span>
             </div>
 
-            <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-1.5">
+            <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 gap-2">
               {listing.imageUrls.map((_, idx) => (
                 <button
                   key={idx}
@@ -279,7 +283,7 @@ function Listing() {
                   aria-label={`Go to image ${idx + 1}`}
                   onClick={() => setCurrentImageIndex(idx)}
                   className={`h-2 rounded-full transition-all duration-200 ${
-                    idx === currentImageIndex ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/80'
+                    idx === currentImageIndex ? 'w-8 bg-white' : 'w-2 bg-white/50 hover:bg-white/80'
                   }`}
                 />
               ))}
@@ -287,134 +291,157 @@ function Listing() {
           </>
         )}
 
-        {/* Save / Share actions */}
-        <div className="absolute top-4 right-4 flex gap-2">
+        {/* Action Buttons Overlay */}
+        <div className="absolute top-6 right-6 flex gap-3">
           <button
             type="button"
             onClick={handleFavoriteToggle}
             aria-label={favorite ? 'Remove from saved properties' : 'Save property'}
-            aria-pressed={favorite}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-rose-600 shadow-sm transition hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-white/95 dark:bg-[#102F15]/90 dark:text-white shadow-lg transition hover:scale-110"
           >
-            {favorite ? <FaHeart aria-hidden="true" /> : <FaRegHeart aria-hidden="true" />}
+            {favorite ? <FaHeart className="text-red-500" /> : <FaRegHeart className="text-gray-500" />}
           </button>
           <button
             type="button"
             onClick={handleShare}
             aria-label="Share property"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm transition hover:bg-white"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-white/95 dark:bg-[#102F15]/90 dark:text-white shadow-lg transition hover:scale-110 text-gray-700"
           >
             <FaShareAlt aria-hidden="true" />
           </button>
           <button
             type="button"
             onClick={handleCopyLink}
-            aria-label="Copy link to this property"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm transition hover:bg-white"
+            aria-label="Copy link"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-white/95 dark:bg-[#102F15]/90 dark:text-white shadow-lg transition hover:scale-110 text-gray-700"
           >
             <FaLink aria-hidden="true" />
           </button>
         </div>
         {linkCopied && (
-          <div className="absolute top-16 right-4 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
+          <div className="absolute top-20 right-6 rounded-full px-4 py-2 text-xs font-bold text-white shadow-lg bg-[#728C5A]">
             Link copied!
           </div>
         )}
       </div>
 
-      <div className="mx-auto mt-8 max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          {/* Header section */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap gap-2">
-                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider text-white ${isRent ? 'bg-blue-600' : 'bg-emerald-600'}`}>
+      {/* ── Content ────────────────────────────── */}
+      <div className="mx-auto mt-[-40px] max-w-5xl px-4 sm:px-6 lg:px-8 relative z-10">
+        <div
+          className="rounded-[2.5rem] p-8 shadow-2xl sm:p-12 bg-white dark:bg-[#102F15] border border-[#728C5A]/10 dark:border-white/10 transition-colors duration-500"
+        >
+          {/* Header Row */}
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 flex-1">
+              {/* Badges */}
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <span
+                  className="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider text-white bg-[#728C5A]"
+                >
                   For {listing.type}
                 </span>
                 {listing.offer && (
-                  <span className="inline-flex rounded-full bg-rose-600 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white">
+                  <span
+                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider bg-red-100 text-red-700"
+                  >
                     Special Offer
                   </span>
                 )}
                 {badges.map((badge) => (
-                  <span key={badge} className="inline-flex rounded-full bg-amber-500 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white">
+                  <span
+                    key={badge}
+                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider bg-gray-100 dark:bg-white/10 text-[#728C5A] dark:text-gray-300 border border-[#728C5A]/20 dark:border-white/10"
+                  >
                     {badge}
                   </span>
                 ))}
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700">
+                <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
                   <FaCheckCircle aria-hidden="true" /> Verified
                 </span>
               </div>
-              <h1 className="mt-3 text-3xl font-extrabold text-slate-900">{listing.title}</h1>
-              <div className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
-                <FaMapMarkerAlt aria-hidden="true" className="shrink-0 text-slate-400" />
+
+              {/* Title & Location */}
+              <h1
+                className="text-4xl sm:text-5xl font-extrabold leading-[1.1] text-[#102F15] dark:text-white"
+                style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+              >
+                {listing.title}
+              </h1>
+              <div className="mt-4 flex items-center gap-2 text-base text-gray-500 dark:text-gray-400">
+                <FaMapMarkerAlt aria-hidden="true" className="text-[#728C5A]" />
                 <span>{listing.address}</span>
               </div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-400">
+              <div className="mt-2 flex items-center gap-2 text-xs text-gray-400">
                 <FaHashtag aria-hidden="true" />
-                <span>Property ID: {listing._id}</span>
+                <span>Ref ID: {listing._id}</span>
               </div>
             </div>
 
-            <div className="min-w-0 max-w-full text-right sm:self-center">
-              <span className="block max-w-full break-words text-3xl font-black text-slate-900">
+            {/* Price Box */}
+            <div className="shrink-0 lg:text-right">
+              <span
+                className="block text-4xl sm:text-5xl font-black break-words text-[#102F15] dark:text-white"
+                style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+              >
                 {formatPrice(displayPrice, selectedCountry, exchangeRates)}
-                {isRent && <span className="text-sm font-normal text-slate-500"> / month</span>}
+                {isRent && <span className="text-xl font-normal text-gray-500 dark:text-gray-400"> /mo</span>}
               </span>
               {listing.offer && (
-                <span className="block max-w-full break-words text-sm font-bold text-slate-400 line-through">
+                <span className="mt-1 block text-sm font-bold line-through text-gray-400">
                   Regular: {formatPrice(listing.price, selectedCountry, exchangeRates)}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Key Specs */}
-          <div className="mt-8 grid grid-cols-2 gap-4 border-y border-slate-100 py-6 sm:grid-cols-4">
-            <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
-              <FaBed aria-hidden="true" className="text-2xl text-slate-500" />
+          {/* Key Specs Grid */}
+          <div className="mt-12 grid grid-cols-2 gap-4 border-y py-8 sm:grid-cols-4 border-[#728C5A]/10 dark:border-white/10">
+            <div className="flex items-center gap-4 rounded-2xl p-5 bg-[#EBFADC]/30 dark:bg-black/20">
+              <FaBed aria-hidden="true" className="text-3xl text-[#728C5A]" />
               <div>
-                <span className="block text-xs font-semibold uppercase text-slate-400">Beds</span>
-                <span className="text-sm font-bold text-slate-800">{listing.bedrooms}</span>
+                <span className="block text-xs font-semibold uppercase tracking-wider text-[#728C5A] dark:text-gray-400">Beds</span>
+                <span className="text-lg font-bold text-[#102F15] dark:text-white">{listing.bedrooms}</span>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
-              <FaBath aria-hidden="true" className="text-2xl text-slate-500" />
+            <div className="flex items-center gap-4 rounded-2xl p-5 bg-[#EBFADC]/30 dark:bg-black/20">
+              <FaBath aria-hidden="true" className="text-3xl text-[#728C5A]" />
               <div>
-                <span className="block text-xs font-semibold uppercase text-slate-400">Baths</span>
-                <span className="text-sm font-bold text-slate-800">{listing.bathrooms}</span>
+                <span className="block text-xs font-semibold uppercase tracking-wider text-[#728C5A] dark:text-gray-400">Baths</span>
+                <span className="text-lg font-bold text-[#102F15] dark:text-white">{listing.bathrooms}</span>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
-              <FaParking aria-hidden="true" className="text-2xl text-slate-500" />
+            <div className="flex items-center gap-4 rounded-2xl p-5 bg-[#EBFADC]/30 dark:bg-black/20">
+              <FaParking aria-hidden="true" className="text-3xl text-[#728C5A]" />
               <div>
-                <span className="block text-xs font-semibold uppercase text-slate-400">Parking</span>
-                <span className="text-sm font-bold text-slate-800">{listing.parking ? 'Yes' : 'No'}</span>
+                <span className="block text-xs font-semibold uppercase tracking-wider text-[#728C5A] dark:text-gray-400">Parking</span>
+                <span className="text-lg font-bold text-[#102F15] dark:text-white">{listing.parking ? 'Included' : 'None'}</span>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
-              <FaChair aria-hidden="true" className="text-2xl text-slate-500" />
+            <div className="flex items-center gap-4 rounded-2xl p-5 bg-[#EBFADC]/30 dark:bg-black/20">
+              <FaChair aria-hidden="true" className="text-3xl text-[#728C5A]" />
               <div>
-                <span className="block text-xs font-semibold uppercase text-slate-400">Furnished</span>
-                <span className="text-sm font-bold text-slate-800">{listing.furnished ? 'Yes' : 'No'}</span>
+                <span className="block text-xs font-semibold uppercase tracking-wider text-[#728C5A] dark:text-gray-400">Furnished</span>
+                <span className="text-lg font-bold text-[#102F15] dark:text-white">{listing.furnished ? 'Yes' : 'Unfurnished'}</span>
               </div>
             </div>
           </div>
 
           {/* Description */}
-          <div className="mt-8">
-            <h2 className="text-xl font-bold text-slate-900">About this property</h2>
-            <p className="mt-4 whitespace-pre-line leading-relaxed text-slate-600">{listing.description}</p>
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-[#102F15] dark:text-white" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>About this residence</h2>
+            <p className="mt-6 whitespace-pre-line leading-loose text-lg text-gray-600 dark:text-gray-300">
+              {listing.description}
+            </p>
           </div>
 
-          {/* Property Features / Amenities */}
+          {/* Amenities List */}
           {listing.amenities && listing.amenities.length > 0 && (
-            <div className="mt-8 border-t border-slate-100 pt-8">
-              <h2 className="text-xl font-bold text-slate-900">Property Features</h2>
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="mt-12 border-t pt-10 border-[#728C5A]/10 dark:border-white/10">
+              <h2 className="text-2xl font-bold text-[#102F15] dark:text-white" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>Premium Features</h2>
+              <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
                 {listing.amenities.map((amenity) => (
-                  <div key={amenity} className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
-                    <FaCheckCircle aria-hidden="true" className="shrink-0 text-emerald-500" />
+                  <div key={amenity} className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium bg-[#EBFADC]/30 dark:bg-black/20 text-[#102F15] dark:text-white">
+                    <FaCheckCircle aria-hidden="true" className="shrink-0 text-[#728C5A]" />
                     <span className="truncate">{amenity}</span>
                   </div>
                 ))}
@@ -422,78 +449,71 @@ function Listing() {
             </div>
           )}
 
-          {/* Property Location + Nearby */}
+          {/* Location & Map & Nearby */}
           {listing.latitude != null && listing.longitude != null && (
-            <div className="mt-8 border-t border-slate-100 pt-8">
-              <h2 className="text-xl font-bold text-slate-900">Property Location</h2>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
-                <FaMapMarkerAlt aria-hidden="true" className="shrink-0 text-slate-400" />
+            <div className="mt-12 border-t pt-10 border-[#728C5A]/10 dark:border-white/10">
+              <h2 className="text-2xl font-bold text-[#102F15] dark:text-white" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>Location & Neighborhood</h2>
+              <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <FaMapMarkerAlt aria-hidden="true" className="text-[#728C5A]" />
                 <span>{listing.address}</span>
-                <span className="text-slate-300">&middot;</span>
-                <span>{[listing.city, listing.state, listing.country].filter(Boolean).join(', ')}</span>
-                <span className="text-slate-300">&middot;</span>
-                <span className="font-mono text-xs">
-                  {Number(listing.latitude).toFixed(4)}, {Number(listing.longitude).toFixed(4)}
-                </span>
+                <span className="text-gray-300 dark:text-gray-700">&middot;</span>
+                <span className="font-semibold">{[listing.city, listing.state, listing.country].filter(Boolean).join(', ')}</span>
               </div>
-              <div className="mt-4">
+              <div className="mt-6 rounded-2xl overflow-hidden border border-[#728C5A]/20 dark:border-white/10">
                 <Map latitude={listing.latitude} longitude={listing.longitude} title={listing.title} interactive={false} />
               </div>
 
-              {/* Nearby distance-based indicators */}
-              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                  <FaWalking aria-hidden="true" className="text-lg text-slate-500" />
+              {/* Nearby Indicators Grid */}
+              <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
+                <div className="flex items-center gap-3 rounded-xl p-4 border bg-white dark:bg-[#102F15] border-[#728C5A]/20 dark:border-white/10 transition-colors">
+                  <FaWalking aria-hidden="true" className="text-2xl text-[#728C5A]" />
                   <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">Walk Score</p>
-                    <p className="text-sm font-bold text-slate-800">{nearby.walkScore} · {walkScoreLabel(nearby.walkScore)}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#728C5A] dark:text-gray-400">Walk Score</p>
+                    <p className="text-sm font-bold mt-0.5 text-[#102F15] dark:text-white">{nearby.walkScore} · {walkScoreLabel(nearby.walkScore)}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                  <FaSchool aria-hidden="true" className="text-lg text-slate-500" />
+                <div className="flex items-center gap-3 rounded-xl p-4 border bg-white dark:bg-[#102F15] border-[#728C5A]/20 dark:border-white/10 transition-colors">
+                  <FaSchool aria-hidden="true" className="text-2xl text-[#728C5A]" />
                   <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">Nearest School</p>
-                    <p className="text-sm font-bold text-slate-800">{nearby.nearestSchoolKm} km</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#728C5A] dark:text-gray-400">Nearest School</p>
+                    <p className="text-sm font-bold mt-0.5 text-[#102F15] dark:text-white">{nearby.nearestSchoolKm} km</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                  <FaHospital aria-hidden="true" className="text-lg text-slate-500" />
+                <div className="flex items-center gap-3 rounded-xl p-4 border bg-white dark:bg-[#102F15] border-[#728C5A]/20 dark:border-white/10 transition-colors">
+                  <FaHospital aria-hidden="true" className="text-2xl text-[#728C5A]" />
                   <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">Nearest Hospital</p>
-                    <p className="text-sm font-bold text-slate-800">{nearby.nearestHospitalKm} km</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#728C5A] dark:text-gray-400">Nearest Hospital</p>
+                    <p className="text-sm font-bold mt-0.5 text-[#102F15] dark:text-white">{nearby.nearestHospitalKm} km</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                  <FaPlane aria-hidden="true" className="text-lg text-slate-500" />
+                <div className="flex items-center gap-3 rounded-xl p-4 border bg-white dark:bg-[#102F15] border-[#728C5A]/20 dark:border-white/10 transition-colors">
+                  <FaPlane aria-hidden="true" className="text-2xl text-[#728C5A]" />
                   <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">Nearest Airport</p>
-                    <p className="text-sm font-bold text-slate-800">{nearby.nearestAirportKm} km</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#728C5A] dark:text-gray-400">Nearest Airport</p>
+                    <p className="text-sm font-bold mt-0.5 text-[#102F15] dark:text-white">{nearby.nearestAirportKm} km</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                  <FaSubway aria-hidden="true" className="text-lg text-slate-500" />
+                <div className="flex items-center gap-3 rounded-xl p-4 border bg-white dark:bg-[#102F15] border-[#728C5A]/20 dark:border-white/10 transition-colors">
+                  <FaSubway aria-hidden="true" className="text-2xl text-[#728C5A]" />
                   <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">Nearest Metro</p>
-                    <p className="text-sm font-bold text-slate-800">{nearby.nearestMetroKm} km</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#728C5A] dark:text-gray-400">Nearest Metro</p>
+                    <p className="text-sm font-bold mt-0.5 text-[#102F15] dark:text-white">{nearby.nearestMetroKm} km</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                  <FaUtensils aria-hidden="true" className="text-lg text-slate-500" />
+                <div className="flex items-center gap-3 rounded-xl p-4 border bg-white dark:bg-[#102F15] border-[#728C5A]/20 dark:border-white/10 transition-colors">
+                  <FaUtensils aria-hidden="true" className="text-2xl text-[#728C5A]" />
                   <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">Restaurants Nearby</p>
-                    <p className="text-sm font-bold text-slate-800">{nearby.restaurantsWithin1km}+ within 1km</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#728C5A] dark:text-gray-400">Dining</p>
+                    <p className="text-sm font-bold mt-0.5 text-[#102F15] dark:text-white">{nearby.restaurantsWithin1km}+ within 1km</p>
                   </div>
                 </div>
               </div>
-              <p className="mt-3 text-xs text-slate-400">
-                Distances are estimates based on the property&apos;s coordinates and are provided for general guidance only.
-              </p>
             </div>
           )}
 
-          {/* Mortgage Estimate (sale listings only) */}
+          {/* Mortgage Calculator */}
           {!isRent && (
-            <div className="mt-8 border-t border-slate-100 pt-8">
+            <div className="mt-12 border-t pt-10 border-[#728C5A]/10 dark:border-white/10">
               <MortgageCalculator
                 priceInLocalCurrency={priceInLocalCurrency}
                 selectedCountry={selectedCountry}
@@ -501,47 +521,47 @@ function Listing() {
             </div>
           )}
 
-          {/* Contact Landlord */}
+          {/* Contact Action Section */}
           {showContactButton && (
-            <div className="mt-8 border-t border-slate-100 pt-8">
+            <div className="mt-12 border-t pt-10 border-[#728C5A]/10 dark:border-white/10">
               {!showContact ? (
                 <button
                   type="button"
                   onClick={handleContactClick}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-3.5 font-semibold text-white transition hover:bg-slate-800"
+                  className="flex w-full items-center justify-center gap-2 rounded-full py-4 text-lg font-bold text-white shadow-xl transition bg-[#728C5A] hover:bg-[#61784c] dark:bg-[#728C5A] dark:hover:bg-[#839b6b]"
                 >
-                  <FaEnvelope aria-hidden="true" /> Contact Landlord
+                  <FaEnvelope aria-hidden="true" /> Contact the Agent / Landlord
                 </button>
               ) : (
-                <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                <div className="space-y-4 rounded-3xl p-8 border shadow-lg bg-white dark:bg-[#102F15] border-[#728C5A]/20 dark:border-white/10">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">
-                      Send a message to {landlord?.username}
+                    <h3 className="text-xl font-bold text-[#102F15] dark:text-white" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>
+                      Message {landlord?.username}
                     </h3>
-                    <p className="mt-1 text-xs text-slate-500">
-                      This will open your email client prefilled with your message.
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      Click send to open your default email client.
                     </p>
                   </div>
                   <label htmlFor="landlord-message" className="sr-only">Message</label>
                   <textarea
                     id="landlord-message"
-                    rows="4"
+                    rows="5"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Enter your message here..."
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-slate-500"
+                    placeholder="I am interested in this property..."
+                    className="w-full rounded-2xl border p-4 text-base outline-none transition bg-gray-50 dark:bg-black/20 text-gray-900 dark:text-white border-[#728C5A]/20 dark:border-white/10 focus:border-[#728C5A] focus:ring-2 focus:ring-[#728C5A]/20"
                   />
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-4 pt-2">
                     <a
                       href={`mailto:${landlord?.email}?subject=Inquiry regarding ${encodeURIComponent(listing.title)}&body=${encodeURIComponent(message)}`}
-                      className="flex-1 rounded-xl bg-slate-900 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-slate-800"
+                      className="flex-1 rounded-full py-3.5 text-center font-bold text-white transition bg-[#728C5A] hover:bg-[#61784c]"
                     >
-                      Send Email
+                      Open Email Client
                     </a>
                     <button
                       type="button"
                       onClick={() => setShowContact(false)}
-                      className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
+                      className="rounded-full border-2 px-8 py-3.5 font-bold transition border-[#728C5A]/20 text-[#102F15] dark:text-white hover:bg-gray-50 dark:hover:bg-white/10"
                     >
                       Cancel
                     </button>
@@ -552,13 +572,13 @@ function Listing() {
           )}
 
           {!isAuthenticated && (
-            <div className="mt-8 border-t border-slate-100 pt-6 text-center">
-              <p className="text-sm text-slate-500">
+            <div className="mt-12 border-t pt-8 text-center border-[#728C5A]/10 dark:border-white/10">
+              <p className="text-base text-gray-500 dark:text-gray-400">
                 Interested in this property?{' '}
-                <Link to="/sign-in" className="font-semibold text-slate-900 hover:underline">
-                  Sign in
+                <Link to="/sign-in" className="font-bold hover:underline text-[#728C5A]">
+                  Sign in to your account
                 </Link>{' '}
-                to contact the landlord.
+                to contact the owner.
               </p>
             </div>
           )}

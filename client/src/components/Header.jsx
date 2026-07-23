@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaSearch, FaBars, FaTimes, FaGlobe, FaHome } from 'react-icons/fa';
+import { FaBars, FaTimes, FaGlobe, FaMoon, FaSun } from 'react-icons/fa';
 import { logout } from '../redux/features/auth/authSlice.js';
 import { setCountry, countryCurrencyMap } from '../redux/features/marketplace/marketplaceSlice.js';
+import { toggleTheme } from '../redux/features/theme/themeSlice.js';
 import api from '../services/api.js';
 
 function Header() {
@@ -12,32 +13,30 @@ function Header() {
   const location = useLocation();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { selectedCountry } = useSelector((state) => state.marketplace);
+  const { theme } = useSelector((state) => state.theme);
 
-  const [searchTerm, setSearchTerm] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   // Close mobile menu on route change
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Sync search input with URL params
+  // Handle scroll for sticky transparent-to-solid effect
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const searchTermFromUrl = urlParams.get('searchTerm') || '';
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSearchTerm(searchTermFromUrl);
-  }, [location.search]);
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    const urlParams = new URLSearchParams(location.search);
-    urlParams.set('searchTerm', searchTerm);
-    const searchQuery = urlParams.toString();
-    navigate(`/search?${searchQuery}`);
-    setMobileMenuOpen(false);
-  };
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    // Initial check
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -50,60 +49,95 @@ function Header() {
     }
   };
 
-  const activeLinkClass = 'text-slate-900 font-semibold';
-  const normalLinkClass = 'text-slate-600 hover:text-slate-900 transition-colors';
+  // Determine header background logic based on route and scroll
+  const isHomePage = location.pathname === '/';
+  
+  let headerClasses = "fixed top-0 z-50 w-full transition-all duration-300 ";
+  if (isHomePage) {
+    if (scrolled) {
+      headerClasses += "bg-white/90 dark:bg-[#102F15]/95 backdrop-blur-md shadow-sm border-b border-[#728C5A]/15 dark:border-white/10";
+    } else {
+      // Hero is solid background (#EBFADC light / #102F15 dark) — match it
+      headerClasses += "bg-[#EBFADC]/80 dark:bg-[#102F15]/80 backdrop-blur-sm border-b border-[#728C5A]/10 dark:border-white/5";
+    }
+  } else {
+    // Other pages: always solid
+    headerClasses += "bg-[#EBFADC] dark:bg-[#102F15] shadow-sm border-b border-[#728C5A]/20 dark:border-white/10";
+  }
+
+  // Text is always theme-aware since hero is a solid background (not dark photo)
+  const textClass = "text-[#102F15] dark:text-white";
+  const mutedTextClass = "text-gray-600 dark:text-gray-300";
+
+  const activeLinkClass = `${textClass} font-semibold relative after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:bg-[#728C5A] dark:after:bg-[#728C5A] after:rounded-full`;
+  const normalLinkClass = `${mutedTextClass} hover:${textClass} transition-colors relative`;
 
   return (
-    <header className="border-b border-slate-200 bg-white/95 backdrop-blur sticky top-0 z-50">
+    <header className={headerClasses}>
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
 
-        {/* Minimal icon logo */}
+        {/* Logo + Wordmark */}
         <Link
           to="/"
           aria-label="Go to homepage"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white transition hover:bg-slate-800"
+          className="flex items-center gap-2.5 shrink-0 group"
         >
-          <FaHome aria-hidden="true" className="text-lg" />
+          <span
+            className={`flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-sm transition group-hover:opacity-90 ${isHomePage && !scrolled ? 'bg-white/20' : 'bg-[#728C5A]'}`}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
+              <path d="M9 21V12h6v9" />
+            </svg>
+          </span>
+          <span
+            className={`hidden sm:block text-xl font-bold tracking-tight transition-colors ${textClass}`}
+            style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+          >
+            EstateHub
+          </span>
         </Link>
 
-        {/* Search Bar — hidden on very small screens, shown from sm up */}
-        <form
-          onSubmit={handleSearchSubmit}
-          className="hidden sm:flex flex-1 items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 max-w-xs sm:max-w-md"
-        >
-          <button type="submit" className="mr-2 text-slate-500 hover:text-slate-800 cursor-pointer">
-            <FaSearch />
-          </button>
-          <input
-            type="text"
-            placeholder="Search properties..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent text-sm outline-none text-slate-700"
-          />
-        </form>
-
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-4 text-sm font-medium">
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
           <NavLink to="/" className={({ isActive }) => isActive ? activeLinkClass : normalLinkClass}>
             Home
+          </NavLink>
+          <NavLink to="/search" className={({ isActive }) => isActive ? activeLinkClass : normalLinkClass}>
+            Search
           </NavLink>
           <NavLink to="/about" className={({ isActive }) => isActive ? activeLinkClass : normalLinkClass}>
             About
           </NavLink>
+          <NavLink to="/contact" className={({ isActive }) => isActive ? activeLinkClass : normalLinkClass}>
+            Contact
+          </NavLink>
+        </nav>
 
-          {/* Country Selector Dropdown */}
-          <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 ml-2">
-            <FaGlobe className="text-slate-400 text-xs shrink-0" />
+        {/* Right Side Controls */}
+        <div className="hidden md:flex items-center gap-4">
+          
+          {/* Theme Toggle */}
+          <button 
+            onClick={() => dispatch(toggleTheme())}
+            className={`p-2 rounded-full transition-colors ${isHomePage && !scrolled ? 'text-white hover:bg-white/20' : 'text-[#728C5A] hover:bg-[#728C5A]/10 dark:text-gray-300 dark:hover:bg-white/10'}`}
+          >
+            {theme === 'dark' ? <FaSun size={16} /> : <FaMoon size={16} />}
+          </button>
+
+          {/* Country Selector */}
+          <div
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 ml-1 border transition-colors ${isHomePage && !scrolled ? 'border-white/30 text-white bg-white/10' : 'border-[#728C5A]/30 text-[#102F15] dark:text-white dark:border-white/20'}`}
+          >
+            <FaGlobe className="text-xs shrink-0" />
             <select
               value={selectedCountry}
               onChange={(e) => dispatch(setCountry(e.target.value))}
               aria-label="Select country"
-              className="bg-transparent text-xs font-semibold text-slate-700 outline-none cursor-pointer border-none p-0"
-              style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none', paddingRight: '8px' }}
+              className="bg-transparent text-xs font-semibold outline-none cursor-pointer border-none p-0 appearance-none pr-2"
             >
               {Object.keys(countryCurrencyMap).map((country) => (
-                <option key={country} value={country}>
+                <option key={country} value={country} className="text-[#102F15]">
                   {country}
                 </option>
               ))}
@@ -111,21 +145,21 @@ function Header() {
           </div>
 
           {isAuthenticated ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 ml-2">
               <NavLink
                 to="/profile"
-                className={({ isActive }) =>
-                  `flex items-center gap-2 ${isActive ? activeLinkClass : normalLinkClass}`
-                }
+                className={`flex items-center gap-2 ${normalLinkClass}`}
               >
                 {user?.avatar ? (
                   <img
                     src={user.avatar}
                     alt={user.username}
-                    className="h-7 w-7 rounded-full object-cover border border-slate-200"
+                    className="h-8 w-8 rounded-full object-cover border-2 border-[#728C5A]"
                   />
                 ) : (
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700 uppercase">
+                  <span
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white uppercase bg-[#728C5A]"
+                  >
                     {user?.username?.[0] || 'U'}
                   </span>
                 )}
@@ -134,103 +168,59 @@ function Header() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded-full border border-slate-300 px-3.5 py-1.5 text-xs text-slate-700 transition hover:border-slate-500 hover:text-slate-950 cursor-pointer"
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition border ${isHomePage && !scrolled ? 'border-white text-white hover:bg-white hover:text-[#102F15]' : 'border-[#102F15] text-[#102F15] hover:bg-[#102F15] hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-[#102F15]'}`}
               >
-                Logout
+                Sign out
               </button>
             </div>
           ) : (
-            <>
-              <NavLink to="/sign-in" className={({ isActive }) => isActive ? activeLinkClass : normalLinkClass}>
-                Sign in
-              </NavLink>
-              <Link to="/sign-up" className="rounded-full bg-slate-800 px-4 py-2 text-xs text-white transition hover:bg-slate-700">
-                Sign up
-              </Link>
-            </>
+            <Link
+              to="/sign-in"
+              className={`ml-2 rounded-md px-6 py-2.5 text-sm font-semibold transition ${isHomePage && !scrolled ? 'bg-white text-[#102F15] hover:bg-white/90' : 'bg-[#728C5A] text-white hover:bg-[#61784c]'}`}
+            >
+              Sign In
+            </Link>
           )}
-        </nav>
+        </div>
 
-        {/* Hamburger Button — visible on mobile only */}
+        {/* Hamburger — mobile only */}
         <button
           type="button"
-          id="mobile-menu-toggle"
           aria-label="Toggle mobile menu"
-          aria-expanded={mobileMenuOpen}
           onClick={() => setMobileMenuOpen((prev) => !prev)}
-          className="md:hidden flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+          className={`md:hidden flex items-center justify-center h-10 w-10 rounded-lg transition ${textClass}`}
         >
-          {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+          {mobileMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
         </button>
       </div>
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-100 bg-white px-4 pb-6 pt-4 space-y-4" id="mobile-menu">
-          {/* Mobile Search */}
-          <form onSubmit={handleSearchSubmit} className="flex items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2">
-            <button type="submit" className="mr-2 text-slate-500 cursor-pointer">
-              <FaSearch />
-            </button>
-            <input
-              type="text"
-              placeholder="Search properties..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-transparent text-sm outline-none text-slate-700"
-            />
-          </form>
-
-          {/* Mobile Nav Links */}
+        <div
+          className="md:hidden border-t px-4 pb-6 pt-4 space-y-4 bg-[#EBFADC] dark:bg-[#102F15] border-[#728C5A]/20 dark:border-white/10"
+        >
           <div className="flex flex-col gap-1 text-sm font-medium">
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                `block px-3 py-2 rounded-xl ${isActive ? 'bg-slate-100 text-slate-900 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`
-              }
-            >
-              Home
-            </NavLink>
-            <NavLink
-              to="/about"
-              className={({ isActive }) =>
-                `block px-3 py-2 rounded-xl ${isActive ? 'bg-slate-100 text-slate-900 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`
-              }
-            >
-              About
-            </NavLink>
-
-            {/* Mobile Country Selector */}
-            <div className="px-3 py-2.5 border-y border-slate-100 my-2 flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <FaGlobe className="text-slate-400" /> Country
-              </span>
-              <select
-                value={selectedCountry}
-                onChange={(e) => dispatch(setCountry(e.target.value))}
-                aria-label="Select country"
-                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none"
+            <NavLink to="/" className={({ isActive }) => `block px-4 py-3 rounded-xl transition ${isActive ? 'bg-[#728C5A]/10 text-[#102F15] dark:bg-white/10 dark:text-white font-semibold' : 'text-[#102F15] dark:text-gray-300'}`}>Home</NavLink>
+            <NavLink to="/search" className={({ isActive }) => `block px-4 py-3 rounded-xl transition ${isActive ? 'bg-[#728C5A]/10 text-[#102F15] dark:bg-white/10 dark:text-white font-semibold' : 'text-[#102F15] dark:text-gray-300'}`}>Search</NavLink>
+            <NavLink to="/about" className={({ isActive }) => `block px-4 py-3 rounded-xl transition ${isActive ? 'bg-[#728C5A]/10 text-[#102F15] dark:bg-white/10 dark:text-white font-semibold' : 'text-[#102F15] dark:text-gray-300'}`}>About</NavLink>
+            
+            <div className="px-4 py-3 flex items-center justify-between">
+              <span className="text-[#102F15] dark:text-gray-300">Theme</span>
+              <button 
+                onClick={() => dispatch(toggleTheme())}
+                className="p-2 rounded-full bg-[#728C5A]/10 dark:bg-white/10 text-[#728C5A] dark:text-white"
               >
-                {Object.keys(countryCurrencyMap).map((country) => (
-                  <option key={country} value={country}>
-                    {country}
-                  </option>
-                ))}
-              </select>
+                {theme === 'dark' ? <FaSun size={16} /> : <FaMoon size={16} />}
+              </button>
             </div>
 
             {isAuthenticated ? (
               <>
-                <NavLink
-                  to="/profile"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 rounded-xl ${isActive ? 'bg-slate-100 text-slate-900 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`
-                  }
-                >
+                <NavLink to="/profile" className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#102F15] dark:text-white">
                   {user?.avatar ? (
-                    <img src={user.avatar} alt={user.username} className="h-7 w-7 rounded-full object-cover border border-slate-200" />
+                    <img src={user.avatar} alt={user.username} className="h-8 w-8 rounded-full object-cover border-2 border-[#728C5A]" />
                   ) : (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700 uppercase">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white bg-[#728C5A]">
                       {user?.username?.[0] || 'U'}
                     </span>
                   )}
@@ -239,23 +229,15 @@ function Header() {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="mt-2 w-full text-left px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition"
+                  className="mt-2 w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-red-600 dark:text-red-400"
                 >
-                  Logout
+                  Sign Out
                 </button>
               </>
             ) : (
               <div className="flex flex-col gap-2 pt-2">
-                <NavLink
-                  to="/sign-in"
-                  className={({ isActive }) =>
-                    `block px-3 py-2 rounded-xl ${isActive ? 'bg-slate-100 text-slate-900 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`
-                  }
-                >
-                  Sign in
-                </NavLink>
-                <Link to="/sign-up" className="block rounded-xl bg-slate-800 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-slate-700 transition">
-                  Sign up
+                <Link to="/sign-in" className="block rounded-xl px-4 py-3 text-center text-sm font-semibold bg-[#728C5A] text-white">
+                  Sign In
                 </Link>
               </div>
             )}

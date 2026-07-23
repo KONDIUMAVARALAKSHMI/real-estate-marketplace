@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Routes, Route } from "react-router-dom";
 import { fetchExchangeRates } from './redux/features/marketplace/marketplaceSlice';
 
@@ -21,10 +21,19 @@ import Contact from "./pages/Contact";
 
 function App() {
   const dispatch = useDispatch();
+  const theme = useSelector((state) => state.theme.theme);
 
   useEffect(() => {
     dispatch(fetchExchangeRates());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   return (
     <Routes>
